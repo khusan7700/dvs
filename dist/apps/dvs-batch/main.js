@@ -64,12 +64,13 @@ exports.DvsBatchModule = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
 const dvs_batch_controller_1 = __webpack_require__(/*! ./dvs-batch.controller */ "./apps/dvs-batch/src/dvs-batch.controller.ts");
 const dvs_batch_service_1 = __webpack_require__(/*! ./dvs-batch.service */ "./apps/dvs-batch/src/dvs-batch.service.ts");
+const config_1 = __webpack_require__(/*! @nestjs/config */ "@nestjs/config");
 let DvsBatchModule = class DvsBatchModule {
 };
 exports.DvsBatchModule = DvsBatchModule;
 exports.DvsBatchModule = DvsBatchModule = __decorate([
     (0, common_1.Module)({
-        imports: [],
+        imports: [config_1.ConfigModule.forRoot()],
         controllers: [dvs_batch_controller_1.DvsBatchController],
         providers: [dvs_batch_service_1.DvsBatchService],
     })
@@ -114,6 +115,16 @@ exports.DvsBatchService = DvsBatchService = __decorate([
 /***/ ((module) => {
 
 module.exports = require("@nestjs/common");
+
+/***/ }),
+
+/***/ "@nestjs/config":
+/*!*********************************!*\
+  !*** external "@nestjs/config" ***!
+  \*********************************/
+/***/ ((module) => {
+
+module.exports = require("@nestjs/config");
 
 /***/ }),
 
@@ -167,7 +178,7 @@ const core_1 = __webpack_require__(/*! @nestjs/core */ "@nestjs/core");
 const dvs_batch_module_1 = __webpack_require__(/*! ./dvs-batch.module */ "./apps/dvs-batch/src/dvs-batch.module.ts");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(dvs_batch_module_1.DvsBatchModule);
-    await app.listen(3000);
+    await app.listen(process.env.PORT_BATCH ?? 3000);
 }
 bootstrap();
 
