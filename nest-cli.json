@@ -1,8 +1,32 @@
 {
   "$schema": "https://json.schemastore.org/nest-cli",
   "collection": "@nestjs/schematics",
-  "sourceRoot": "src",
+  "sourceRoot": "apps/dvs-api/src",
   "compilerOptions": {
-    "deleteOutDir": true
+    "deleteOutDir": true,
+    "webpack": true,
+    "tsConfigPath": "apps/dvs-api/tsconfig.app.json"
+  },
+  "monorepo": true,
+  "root": "apps/dvs-api",
+  "projects": {
+    "dvs": {
+      "type": "application",
+      "root": "apps/dvs-api",
+      "entryFile": "main",
+      "sourceRoot": "apps/dvs-api/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/dvs-api/tsconfig.app.json"
+      }
+    },
+    "dvs-batch": {
+      "type": "application",
+      "root": "apps/dvs-batch",
+      "entryFile": "main",
+      "sourceRoot": "apps/dvs-batch/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/dvs-batch/tsconfig.app.json"
+      }
+    }
   }
 }

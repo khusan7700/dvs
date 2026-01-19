@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 
 @Injectable()
-export class AppService {
+export class DvsBatchService {
   getHello(): string {
-    return 'Hello World!';
+    return 'Welcome to DVS-batch server!!';
   }
 }
