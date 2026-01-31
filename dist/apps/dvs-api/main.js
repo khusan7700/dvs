@@ -65,16 +65,64 @@ const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
 const app_controller_1 = __webpack_require__(/*! ./app.controller */ "./apps/dvs-api/src/app.controller.ts");
 const app_service_1 = __webpack_require__(/*! ./app.service */ "./apps/dvs-api/src/app.service.ts");
 const config_1 = __webpack_require__(/*! @nestjs/config */ "@nestjs/config");
+const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
+const apollo_1 = __webpack_require__(/*! @nestjs/apollo */ "@nestjs/apollo");
+const app_resolver_1 = __webpack_require__(/*! ./app.resolver */ "./apps/dvs-api/src/app.resolver.ts");
+const components_module_1 = __webpack_require__(/*! ./components/components.module */ "./apps/dvs-api/src/components/components.module.ts");
+const database_module_1 = __webpack_require__(/*! ./database/database.module */ "./apps/dvs-api/src/database/database.module.ts");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
-        imports: [config_1.ConfigModule.forRoot()],
+        imports: [
+            config_1.ConfigModule.forRoot(),
+            graphql_1.GraphQLModule.forRoot({ driver: apollo_1.ApolloDriver, playground: true, uploads: false, autoSchemaFile: true }),
+            components_module_1.ComponentsModule,
+            database_module_1.DatabaseModule,
+        ],
         controllers: [app_controller_1.AppController],
-        providers: [app_service_1.AppService],
+        providers: [app_service_1.AppService, app_resolver_1.AppResolver],
     })
 ], AppModule);
+
+
+/***/ }),
+
+/***/ "./apps/dvs-api/src/app.resolver.ts":
+/*!******************************************!*\
+  !*** ./apps/dvs-api/src/app.resolver.ts ***!
+  \******************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.AppResolver = void 0;
+const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
+let AppResolver = class AppResolver {
+    sayHello() {
+        return 'GraphQl API Server';
+    }
+};
+exports.AppResolver = AppResolver;
+__decorate([
+    (0, graphql_1.Query)(() => String),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", String)
+], AppResolver.prototype, "sayHello", null);
+exports.AppResolver = AppResolver = __decorate([
+    (0, graphql_1.Resolver)()
+], AppResolver);
 
 
 /***/ }),
@@ -108,6 +156,124 @@ exports.AppService = AppService = __decorate([
 
 /***/ }),
 
+/***/ "./apps/dvs-api/src/components/components.module.ts":
+/*!**********************************************************!*\
+  !*** ./apps/dvs-api/src/components/components.module.ts ***!
+  \**********************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.ComponentsModule = void 0;
+const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
+const member_module_1 = __webpack_require__(/*! ./member/member.module */ "./apps/dvs-api/src/components/member/member.module.ts");
+const property_module_1 = __webpack_require__(/*! ./property/property.module */ "./apps/dvs-api/src/components/property/property.module.ts");
+let ComponentsModule = class ComponentsModule {
+};
+exports.ComponentsModule = ComponentsModule;
+exports.ComponentsModule = ComponentsModule = __decorate([
+    (0, common_1.Module)({
+        imports: [member_module_1.MemberModule, property_module_1.PropertyModule]
+    })
+], ComponentsModule);
+
+
+/***/ }),
+
+/***/ "./apps/dvs-api/src/components/member/member.module.ts":
+/*!*************************************************************!*\
+  !*** ./apps/dvs-api/src/components/member/member.module.ts ***!
+  \*************************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.MemberModule = void 0;
+const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
+let MemberModule = class MemberModule {
+};
+exports.MemberModule = MemberModule;
+exports.MemberModule = MemberModule = __decorate([
+    (0, common_1.Module)({})
+], MemberModule);
+
+
+/***/ }),
+
+/***/ "./apps/dvs-api/src/components/property/property.module.ts":
+/*!*****************************************************************!*\
+  !*** ./apps/dvs-api/src/components/property/property.module.ts ***!
+  \*****************************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.PropertyModule = void 0;
+const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
+let PropertyModule = class PropertyModule {
+};
+exports.PropertyModule = PropertyModule;
+exports.PropertyModule = PropertyModule = __decorate([
+    (0, common_1.Module)({})
+], PropertyModule);
+
+
+/***/ }),
+
+/***/ "./apps/dvs-api/src/database/database.module.ts":
+/*!******************************************************!*\
+  !*** ./apps/dvs-api/src/database/database.module.ts ***!
+  \******************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.DatabaseModule = void 0;
+const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
+let DatabaseModule = class DatabaseModule {
+};
+exports.DatabaseModule = DatabaseModule;
+exports.DatabaseModule = DatabaseModule = __decorate([
+    (0, common_1.Module)({})
+], DatabaseModule);
+
+
+/***/ }),
+
+/***/ "@nestjs/apollo":
+/*!*********************************!*\
+  !*** external "@nestjs/apollo" ***!
+  \*********************************/
+/***/ ((module) => {
+
+module.exports = require("@nestjs/apollo");
+
+/***/ }),
+
 /***/ "@nestjs/common":
 /*!*********************************!*\
   !*** external "@nestjs/common" ***!
@@ -135,6 +301,16 @@ module.exports = require("@nestjs/config");
 /***/ ((module) => {
 
 module.exports = require("@nestjs/core");
+
+/***/ }),
+
+/***/ "@nestjs/graphql":
+/*!**********************************!*\
+  !*** external "@nestjs/graphql" ***!
+  \**********************************/
+/***/ ((module) => {
+
+module.exports = require("@nestjs/graphql");
 
 /***/ })
 
