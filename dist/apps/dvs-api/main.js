@@ -251,14 +251,48 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var _a;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.DatabaseModule = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
+const mongoose_1 = __webpack_require__(/*! @nestjs/mongoose */ "@nestjs/mongoose");
+const mongoose_2 = __webpack_require__(/*! mongoose */ "mongoose");
 let DatabaseModule = class DatabaseModule {
+    constructor(connection) {
+        this.connection = connection;
+        if (connection.readyState === 1) {
+            console.log(`
+🎉🎉🎉 MONGO CONNECTION SUCCESS 🎉🎉🎉
+💾 Database: MongoDB
+🌍 Mode: ${process.env.NODE_ENV === 'production' ? '🚀 PRODUCTION' : '🛠️ DEVELOPMENT'}
+🔥 Everything is running smoothly!
+`);
+        }
+        else {
+            console.log('DB is not connected!');
+        }
+    }
 };
 exports.DatabaseModule = DatabaseModule;
 exports.DatabaseModule = DatabaseModule = __decorate([
-    (0, common_1.Module)({})
+    (0, common_1.Module)({
+        imports: [
+            mongoose_1.MongooseModule.forRootAsync({
+                useFactory: () => ({
+                    uri: process.env.NODE_ENV === 'production' ? process.env.MONGO_PROD : process.env.MONGO_DEV,
+                }),
+            }),
+        ],
+        exports: [mongoose_1.MongooseModule],
+    }),
+    __param(0, (0, mongoose_1.InjectConnection)()),
+    __metadata("design:paramtypes", [typeof (_a = typeof mongoose_2.Connection !== "undefined" && mongoose_2.Connection) === "function" ? _a : Object])
 ], DatabaseModule);
 
 
@@ -311,6 +345,26 @@ module.exports = require("@nestjs/core");
 /***/ ((module) => {
 
 module.exports = require("@nestjs/graphql");
+
+/***/ }),
+
+/***/ "@nestjs/mongoose":
+/*!***********************************!*\
+  !*** external "@nestjs/mongoose" ***!
+  \***********************************/
+/***/ ((module) => {
+
+module.exports = require("@nestjs/mongoose");
+
+/***/ }),
+
+/***/ "mongoose":
+/*!***************************!*\
+  !*** external "mongoose" ***!
+  \***************************/
+/***/ ((module) => {
+
+module.exports = require("mongoose");
 
 /***/ })
 
