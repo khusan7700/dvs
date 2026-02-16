@@ -6,19 +6,19 @@ const MemberSchema = new Schema(
 		memberType: {
 			type: String,
 			emum: MemberType,
-			defailt: MemberType.USER,
+			default: MemberType.USER,
 		},
 
 		memberStatus: {
 			type: String,
 			emum: MemberStatus,
-			defailt: MemberStatus.ACTIVE,
+			default: MemberStatus.ACTIVE,
 		},
 
 		memberAuthType: {
 			type: String,
 			emum: MemberAuthType,
-			defailt: MemberAuthType.PHONE,
+			default: MemberAuthType.PHONE,
 		},
 
 		memberPhone: {
@@ -57,6 +57,11 @@ const MemberSchema = new Schema(
 		},
 
 		memberProperties: {
+			type: Number,
+			default: 0,
+		},
+
+		memberArticles: {
 			type: Number,
 			default: 0,
 		},
@@ -110,7 +115,7 @@ const MemberSchema = new Schema(
 			type: Date,
 		},
 	},
-	{ timeStamps: true, collection: 'members' },
+	{ timestamps: true, collection: 'members' },
 );
 
 export default MemberSchema;
