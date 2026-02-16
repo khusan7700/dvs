@@ -185,12 +185,81 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.AuthModule = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
+const auth_service_1 = __webpack_require__(/*! ./auth.service */ "./apps/dvs-api/src/components/auth/auth.service.ts");
+const axios_1 = __webpack_require__(/*! @nestjs/axios */ "@nestjs/axios");
+const jwt_1 = __webpack_require__(/*! @nestjs/jwt */ "@nestjs/jwt");
 let AuthModule = class AuthModule {
 };
 exports.AuthModule = AuthModule;
 exports.AuthModule = AuthModule = __decorate([
-    (0, common_1.Module)({})
+    (0, common_1.Module)({
+        imports: [
+            axios_1.HttpModule,
+            jwt_1.JwtModule.register({
+                secret: `${process.env.SECRET_TOKEN}`,
+                signOptions: { expiresIn: '30d' },
+            }),
+        ],
+        providers: [auth_service_1.AuthService],
+        exports: [auth_service_1.AuthService],
+    })
 ], AuthModule);
+
+
+/***/ }),
+
+/***/ "./apps/dvs-api/src/components/auth/auth.service.ts":
+/*!**********************************************************!*\
+  !*** ./apps/dvs-api/src/components/auth/auth.service.ts ***!
+  \**********************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.AuthService = void 0;
+const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
+const jwt_1 = __webpack_require__(/*! @nestjs/jwt */ "@nestjs/jwt");
+const bcrypt = __webpack_require__(/*! bcryptjs */ "bcryptjs");
+let AuthService = class AuthService {
+    constructor(jwtService) {
+        this.jwtService = jwtService;
+    }
+    async hashPassword(memberPassword) {
+        const salt = await bcrypt.genSalt();
+        return await bcrypt.hash(memberPassword, salt);
+    }
+    async comparePasswords(password, hashedPassword) {
+        return await bcrypt.compare(password, hashedPassword);
+    }
+    async createToken(member) {
+        const payload = {};
+        Object.keys(member['_doc'] ? member['_doc'] : member).map((ele) => {
+            payload[`${ele}`] = member[`${ele}`];
+        });
+        delete payload.memberPassword;
+        console.log('payload:', payload);
+        return await this.jwtService.signAsync(payload);
+    }
+    async verifyToken(token) {
+        const member = await this.jwtService.verifyAsync(token);
+        return member;
+    }
+};
+exports.AuthService = AuthService;
+exports.AuthService = AuthService = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [typeof (_a = typeof jwt_1.JwtService !== "undefined" && jwt_1.JwtService) === "function" ? _a : Object])
+], AuthService);
 
 
 /***/ }),
@@ -364,12 +433,13 @@ const member_resolver_1 = __webpack_require__(/*! ./member.resolver */ "./apps/d
 const member_service_1 = __webpack_require__(/*! ./member.service */ "./apps/dvs-api/src/components/member/member.service.ts");
 const mongoose_1 = __webpack_require__(/*! @nestjs/mongoose */ "@nestjs/mongoose");
 const Member_model_1 = __webpack_require__(/*! ../../schemas/Member.model */ "./apps/dvs-api/src/schemas/Member.model.ts");
+const auth_module_1 = __webpack_require__(/*! ../auth/auth.module */ "./apps/dvs-api/src/components/auth/auth.module.ts");
 let MemberModule = class MemberModule {
 };
 exports.MemberModule = MemberModule;
 exports.MemberModule = MemberModule = __decorate([
     (0, common_1.Module)({
-        imports: [mongoose_1.MongooseModule.forFeature([{ name: 'Member', schema: Member_model_1.default }])],
+        imports: [mongoose_1.MongooseModule.forFeature([{ name: 'Member', schema: Member_model_1.default }]), auth_module_1.AuthModule],
         providers: [member_resolver_1.MemberResolver, member_service_1.MemberService],
     })
 ], MemberModule);
@@ -409,7 +479,6 @@ let MemberResolver = class MemberResolver {
     }
     async singup(input) {
         console.log('Mutation signup');
-        console.log('input:', input);
         return this.memberService.signup(input);
     }
     async login(input) {
@@ -480,7 +549,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var _a;
+var _a, _b;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.MemberService = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
@@ -488,13 +557,17 @@ const mongoose_1 = __webpack_require__(/*! @nestjs/mongoose */ "@nestjs/mongoose
 const mongoose_2 = __webpack_require__(/*! mongoose */ "mongoose");
 const member_enum_1 = __webpack_require__(/*! ../../libs/enums/member.enum */ "./apps/dvs-api/src/libs/enums/member.enum.ts");
 const common_enum_1 = __webpack_require__(/*! ../../libs/enums/common.enum */ "./apps/dvs-api/src/libs/enums/common.enum.ts");
+const auth_service_1 = __webpack_require__(/*! ../auth/auth.service */ "./apps/dvs-api/src/components/auth/auth.service.ts");
 let MemberService = class MemberService {
-    constructor(memberModel) {
+    constructor(memberModel, authService) {
         this.memberModel = memberModel;
+        this.authService = authService;
     }
     async signup(input) {
+        input.memberPassword = await this.authService.hashPassword(input.memberPassword);
         try {
             const result = await this.memberModel.create(input);
+            result.accessToken = await this.authService.createToken(result);
             return result;
         }
         catch (err) {
@@ -514,9 +587,10 @@ let MemberService = class MemberService {
         else if (response.memberStatus === member_enum_1.MemberStatus.BLOCK) {
             throw new common_1.InternalServerErrorException(common_enum_1.Message.BLOCKED_USER);
         }
-        const isMatch = memberPassword === response.memberPassword;
+        const isMatch = await this.authService.comparePasswords(input.memberPassword, response.memberPassword);
         if (!isMatch)
             throw new common_1.InternalServerErrorException(common_enum_1.Message.WRONG_PASSWORD);
+        response.accessToken = await this.authService.createToken(response);
         return response;
     }
     async updateMember() {
@@ -530,7 +604,7 @@ exports.MemberService = MemberService;
 exports.MemberService = MemberService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, mongoose_1.InjectModel)('Member')),
-    __metadata("design:paramtypes", [typeof (_a = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _a : Object])
+    __metadata("design:paramtypes", [typeof (_a = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _a : Object, typeof (_b = typeof auth_service_1.AuthService !== "undefined" && auth_service_1.AuthService) === "function" ? _b : Object])
 ], MemberService);
 
 
@@ -613,19 +687,35 @@ exports.DatabaseModule = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
 const mongoose_1 = __webpack_require__(/*! @nestjs/mongoose */ "@nestjs/mongoose");
 const mongoose_2 = __webpack_require__(/*! mongoose */ "mongoose");
+function simpleBoxLog(message) {
+    const lines = message
+        .trim()
+        .split('\n')
+        .map((line) => line.trim());
+    const maxLength = Math.max(...lines.map((line) => line.length));
+    const horizontal = '─'.repeat(maxLength + 4);
+    console.log(`┌${horizontal}┐`);
+    lines.forEach((line) => {
+        const padding = ' '.repeat(maxLength - line.length);
+        console.log(`  ${line}${padding}  `);
+    });
+    console.log(`└${horizontal}┘`);
+}
 let DatabaseModule = class DatabaseModule {
     constructor(connection) {
         this.connection = connection;
+        const env = process.env.NODE_ENV === 'production' ? '🚀 PRODUCTION' : '🛠️ DEVELOPMENT';
         if (connection.readyState === 1) {
-            console.log(`
-🎉🎉🎉 MONGO CONNECTION SUCCESS 🎉🎉🎉
-💾 Database: MongoDB
-🌍 Mode: ${process.env.NODE_ENV === 'production' ? '🚀 PRODUCTION' : '🛠️ DEVELOPMENT'}
-🔥 Everything is running smoothly!
-`);
+            const message = `
+    🎉🎉🎉 MONGO CONNECTION SUCCESS 🎉🎉🎉
+    💾 Database: MongoDB
+    🌍 Mode: ${env}
+    🔥 Everything is running smoothly
+			`;
+            simpleBoxLog(message);
         }
         else {
-            console.log('DB is not connected!');
+            simpleBoxLog('❌ DB is not connected!');
         }
     }
 };
@@ -845,6 +935,10 @@ __decorate([
     (0, graphql_1.Field)(() => Date),
     __metadata("design:type", typeof (_o = typeof Date !== "undefined" && Date) === "function" ? _o : Object)
 ], Member.prototype, "updatedAt", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], Member.prototype, "accessToken", void 0);
 exports.Member = Member = __decorate([
     (0, graphql_1.ObjectType)()
 ], Member);
@@ -1092,6 +1186,16 @@ module.exports = require("@nestjs/apollo");
 
 /***/ }),
 
+/***/ "@nestjs/axios":
+/*!********************************!*\
+  !*** external "@nestjs/axios" ***!
+  \********************************/
+/***/ ((module) => {
+
+module.exports = require("@nestjs/axios");
+
+/***/ }),
+
 /***/ "@nestjs/common":
 /*!*********************************!*\
   !*** external "@nestjs/common" ***!
@@ -1132,6 +1236,16 @@ module.exports = require("@nestjs/graphql");
 
 /***/ }),
 
+/***/ "@nestjs/jwt":
+/*!******************************!*\
+  !*** external "@nestjs/jwt" ***!
+  \******************************/
+/***/ ((module) => {
+
+module.exports = require("@nestjs/jwt");
+
+/***/ }),
+
 /***/ "@nestjs/mongoose":
 /*!***********************************!*\
   !*** external "@nestjs/mongoose" ***!
@@ -1139,6 +1253,16 @@ module.exports = require("@nestjs/graphql");
 /***/ ((module) => {
 
 module.exports = require("@nestjs/mongoose");
+
+/***/ }),
+
+/***/ "bcryptjs":
+/*!***************************!*\
+  !*** external "bcryptjs" ***!
+  \***************************/
+/***/ ((module) => {
+
+module.exports = require("bcryptjs");
 
 /***/ }),
 
