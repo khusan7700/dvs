@@ -264,6 +264,87 @@ exports.AuthService = AuthService = __decorate([
 
 /***/ }),
 
+/***/ "./apps/dvs-api/src/components/auth/decorators/authMember.decorator.ts":
+/*!*****************************************************************************!*\
+  !*** ./apps/dvs-api/src/components/auth/decorators/authMember.decorator.ts ***!
+  \*****************************************************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.AuthMember = void 0;
+const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
+exports.AuthMember = (0, common_1.createParamDecorator)((data, context) => {
+    let request;
+    if (context.contextType === 'graphql') {
+        request = context.getArgByIndex(2).req;
+        if (request.body.authMember) {
+            request.body.authMember.authorization = request.headers?.authorization;
+        }
+    }
+    else
+        request = context.switchToHttp().getRequest();
+    const member = request.body.authMember;
+    if (member)
+        return data ? member?.[data] : member;
+    else
+        return null;
+});
+
+
+/***/ }),
+
+/***/ "./apps/dvs-api/src/components/auth/guards/auth.guard.ts":
+/*!***************************************************************!*\
+  !*** ./apps/dvs-api/src/components/auth/guards/auth.guard.ts ***!
+  \***************************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.AuthGuard = void 0;
+const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
+const auth_service_1 = __webpack_require__(/*! ../auth.service */ "./apps/dvs-api/src/components/auth/auth.service.ts");
+const common_enum_1 = __webpack_require__(/*! apps/dvs-api/src/libs/enums/common.enum */ "./apps/dvs-api/src/libs/enums/common.enum.ts");
+let AuthGuard = class AuthGuard {
+    constructor(authService) {
+        this.authService = authService;
+    }
+    async canActivate(context) {
+        console.info('--- @guard() Authentication [AuthGuard] ---');
+        if (context.contextType === 'graphql') {
+            const request = context.getArgByIndex(2).req;
+            const bearerToken = request.headers.authorization;
+            if (!bearerToken)
+                throw new common_1.BadRequestException(common_enum_1.Message.TOKEN_NOT_EXIST);
+            const token = bearerToken.split(' ')[1], authMember = await this.authService.verifyToken(token);
+            if (!authMember)
+                throw new common_1.UnauthorizedException(common_enum_1.Message.NOT_AUTHENTICATED);
+            console.log('memberNick[auth] =>', authMember.memberNick);
+            request.body.authMember = authMember;
+            return true;
+        }
+    }
+};
+exports.AuthGuard = AuthGuard;
+exports.AuthGuard = AuthGuard = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [typeof (_a = typeof auth_service_1.AuthService !== "undefined" && auth_service_1.AuthService) === "function" ? _a : Object])
+], AuthGuard);
+
+
+/***/ }),
+
 /***/ "./apps/dvs-api/src/components/board-article/board-article.module.ts":
 /*!***************************************************************************!*\
   !*** ./apps/dvs-api/src/components/board-article/board-article.module.ts ***!
@@ -466,13 +547,17 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var _a, _b, _c, _d, _e, _f, _g;
+var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.MemberResolver = void 0;
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
 const member_service_1 = __webpack_require__(/*! ./member.service */ "./apps/dvs-api/src/components/member/member.service.ts");
+const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
 const member_input_1 = __webpack_require__(/*! ../../libs/dto/member/member.input */ "./apps/dvs-api/src/libs/dto/member/member.input.ts");
 const member_1 = __webpack_require__(/*! ../../libs/dto/member/member */ "./apps/dvs-api/src/libs/dto/member/member.ts");
+const auth_guard_1 = __webpack_require__(/*! ../auth/guards/auth.guard */ "./apps/dvs-api/src/components/auth/guards/auth.guard.ts");
+const authMember_decorator_1 = __webpack_require__(/*! ../auth/decorators/authMember.decorator */ "./apps/dvs-api/src/components/auth/decorators/authMember.decorator.ts");
+const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
 let MemberResolver = class MemberResolver {
     constructor(memberService) {
         this.memberService = memberService;
@@ -486,12 +571,25 @@ let MemberResolver = class MemberResolver {
         console.log('Mutation', input);
         return this.memberService.login(input);
     }
-    async updateMember() {
+    async updateMember(memberId) {
         console.log('Mutation updateMember');
         return this.memberService.updateMember();
     }
     async getMember() {
         console.log('Query gerMember');
+        return this.memberService.getMember();
+    }
+    async checkAuth(memberNick) {
+        console.log('QueryL checkAuth');
+        console.log('memberNick:', memberNick);
+        return `Hi ${memberNick}`;
+    }
+    async getAllMembersByAdmin() {
+        console.log('mutation: getAllMembersByAdmin ');
+        return this.memberService.getMember();
+    }
+    async updateMemberByAdmin() {
+        console.log('mutation: updateMemberByAdmin');
         return this.memberService.getMember();
     }
 };
@@ -511,17 +609,39 @@ __decorate([
     __metadata("design:returntype", typeof (_e = typeof Promise !== "undefined" && Promise) === "function" ? _e : Object)
 ], MemberResolver.prototype, "login", null);
 __decorate([
+    (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
     (0, graphql_1.Mutation)(() => String),
+    __param(0, (0, authMember_decorator_1.AuthMember)('_id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
-    __metadata("design:returntype", typeof (_f = typeof Promise !== "undefined" && Promise) === "function" ? _f : Object)
+    __metadata("design:paramtypes", [typeof (_f = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _f : Object]),
+    __metadata("design:returntype", typeof (_g = typeof Promise !== "undefined" && Promise) === "function" ? _g : Object)
 ], MemberResolver.prototype, "updateMember", null);
 __decorate([
     (0, graphql_1.Query)(() => String),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
-    __metadata("design:returntype", typeof (_g = typeof Promise !== "undefined" && Promise) === "function" ? _g : Object)
+    __metadata("design:returntype", typeof (_h = typeof Promise !== "undefined" && Promise) === "function" ? _h : Object)
 ], MemberResolver.prototype, "getMember", null);
+__decorate([
+    (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
+    (0, graphql_1.Query)(() => String),
+    __param(0, (0, authMember_decorator_1.AuthMember)('memberNick')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", typeof (_j = typeof Promise !== "undefined" && Promise) === "function" ? _j : Object)
+], MemberResolver.prototype, "checkAuth", null);
+__decorate([
+    (0, graphql_1.Mutation)(() => String),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", typeof (_k = typeof Promise !== "undefined" && Promise) === "function" ? _k : Object)
+], MemberResolver.prototype, "getAllMembersByAdmin", null);
+__decorate([
+    (0, graphql_1.Mutation)(() => String),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", typeof (_l = typeof Promise !== "undefined" && Promise) === "function" ? _l : Object)
+], MemberResolver.prototype, "updateMemberByAdmin", null);
 exports.MemberResolver = MemberResolver = __decorate([
     (0, graphql_1.Resolver)(),
     __metadata("design:paramtypes", [typeof (_a = typeof member_service_1.MemberService !== "undefined" && member_service_1.MemberService) === "function" ? _a : Object])
