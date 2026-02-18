@@ -294,6 +294,22 @@ exports.AuthMember = (0, common_1.createParamDecorator)((data, context) => {
 
 /***/ }),
 
+/***/ "./apps/dvs-api/src/components/auth/decorators/roles.decorator.ts":
+/*!************************************************************************!*\
+  !*** ./apps/dvs-api/src/components/auth/decorators/roles.decorator.ts ***!
+  \************************************************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Roles = void 0;
+const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
+const Roles = (...roles) => (0, common_1.SetMetadata)('roles', roles);
+exports.Roles = Roles;
+
+
+/***/ }),
+
 /***/ "./apps/dvs-api/src/components/auth/guards/auth.guard.ts":
 /*!***************************************************************!*\
   !*** ./apps/dvs-api/src/components/auth/guards/auth.guard.ts ***!
@@ -341,6 +357,62 @@ exports.AuthGuard = AuthGuard = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [typeof (_a = typeof auth_service_1.AuthService !== "undefined" && auth_service_1.AuthService) === "function" ? _a : Object])
 ], AuthGuard);
+
+
+/***/ }),
+
+/***/ "./apps/dvs-api/src/components/auth/guards/roles.guard.ts":
+/*!****************************************************************!*\
+  !*** ./apps/dvs-api/src/components/auth/guards/roles.guard.ts ***!
+  \****************************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a, _b;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.RolesGuard = void 0;
+const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
+const core_1 = __webpack_require__(/*! @nestjs/core */ "@nestjs/core");
+const auth_service_1 = __webpack_require__(/*! ../auth.service */ "./apps/dvs-api/src/components/auth/auth.service.ts");
+const common_enum_1 = __webpack_require__(/*! apps/dvs-api/src/libs/enums/common.enum */ "./apps/dvs-api/src/libs/enums/common.enum.ts");
+let RolesGuard = class RolesGuard {
+    constructor(reflector, authService) {
+        this.reflector = reflector;
+        this.authService = authService;
+    }
+    async canActivate(context) {
+        const roles = this.reflector.get('roles', context.getHandler());
+        if (!roles)
+            return true;
+        console.info(`--- @guard() Authentication [RolesGuard]: ${roles} ---`);
+        if (context.contextType === 'graphql') {
+            const request = context.getArgByIndex(2).req;
+            const bearerToken = request.headers.authorization;
+            if (!bearerToken)
+                throw new common_1.BadRequestException(common_enum_1.Message.TOKEN_NOT_EXIST);
+            const token = bearerToken.split(' ')[1], authMember = await this.authService.verifyToken(token), hasRole = () => roles.indexOf(authMember.memberType) > -1, hasPermission = hasRole();
+            if (!authMember || !hasPermission)
+                throw new common_1.ForbiddenException(common_enum_1.Message.ONLY_SPECIFIC_ROLES_ALLOW);
+            console.log('memberNick[roles] =>', authMember.memberNick);
+            request.body.authMember = authMember;
+            return true;
+        }
+    }
+};
+exports.RolesGuard = RolesGuard;
+exports.RolesGuard = RolesGuard = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [typeof (_a = typeof core_1.Reflector !== "undefined" && core_1.Reflector) === "function" ? _a : Object, typeof (_b = typeof auth_service_1.AuthService !== "undefined" && auth_service_1.AuthService) === "function" ? _b : Object])
+], RolesGuard);
 
 
 /***/ }),
@@ -547,7 +619,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
+var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.MemberResolver = void 0;
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
@@ -558,6 +630,9 @@ const member_1 = __webpack_require__(/*! ../../libs/dto/member/member */ "./apps
 const auth_guard_1 = __webpack_require__(/*! ../auth/guards/auth.guard */ "./apps/dvs-api/src/components/auth/guards/auth.guard.ts");
 const authMember_decorator_1 = __webpack_require__(/*! ../auth/decorators/authMember.decorator */ "./apps/dvs-api/src/components/auth/decorators/authMember.decorator.ts");
 const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
+const roles_decorator_1 = __webpack_require__(/*! ../auth/decorators/roles.decorator */ "./apps/dvs-api/src/components/auth/decorators/roles.decorator.ts");
+const member_enum_1 = __webpack_require__(/*! ../../libs/enums/member.enum */ "./apps/dvs-api/src/libs/enums/member.enum.ts");
+const roles_guard_1 = __webpack_require__(/*! ../auth/guards/roles.guard */ "./apps/dvs-api/src/components/auth/guards/roles.guard.ts");
 let MemberResolver = class MemberResolver {
     constructor(memberService) {
         this.memberService = memberService;
@@ -580,9 +655,13 @@ let MemberResolver = class MemberResolver {
         return this.memberService.getMember();
     }
     async checkAuth(memberNick) {
-        console.log('QueryL checkAuth');
+        console.log('Query checkAuth');
         console.log('memberNick:', memberNick);
         return `Hi ${memberNick}`;
+    }
+    async checkAuthRoles(authMember) {
+        console.log('Query checkAuthRoles');
+        return `Hi ${authMember.memberNick}, you are ${authMember.memberType} (memberId:${authMember._id})`;
     }
     async getAllMembersByAdmin() {
         console.log('mutation: getAllMembersByAdmin ');
@@ -631,16 +710,27 @@ __decorate([
     __metadata("design:returntype", typeof (_j = typeof Promise !== "undefined" && Promise) === "function" ? _j : Object)
 ], MemberResolver.prototype, "checkAuth", null);
 __decorate([
+    (0, roles_decorator_1.Roles)(member_enum_1.MemberType.USER, member_enum_1.MemberType.ADMIN),
+    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
+    (0, graphql_1.Query)(() => String),
+    __param(0, (0, authMember_decorator_1.AuthMember)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_k = typeof member_1.Member !== "undefined" && member_1.Member) === "function" ? _k : Object]),
+    __metadata("design:returntype", typeof (_l = typeof Promise !== "undefined" && Promise) === "function" ? _l : Object)
+], MemberResolver.prototype, "checkAuthRoles", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(member_enum_1.MemberType.ADMIN),
+    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
     (0, graphql_1.Mutation)(() => String),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
-    __metadata("design:returntype", typeof (_k = typeof Promise !== "undefined" && Promise) === "function" ? _k : Object)
+    __metadata("design:returntype", typeof (_m = typeof Promise !== "undefined" && Promise) === "function" ? _m : Object)
 ], MemberResolver.prototype, "getAllMembersByAdmin", null);
 __decorate([
     (0, graphql_1.Mutation)(() => String),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
-    __metadata("design:returntype", typeof (_l = typeof Promise !== "undefined" && Promise) === "function" ? _l : Object)
+    __metadata("design:returntype", typeof (_o = typeof Promise !== "undefined" && Promise) === "function" ? _o : Object)
 ], MemberResolver.prototype, "updateMemberByAdmin", null);
 exports.MemberResolver = MemberResolver = __decorate([
     (0, graphql_1.Resolver)(),
