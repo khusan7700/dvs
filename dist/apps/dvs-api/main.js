@@ -619,7 +619,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
+var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.MemberResolver = void 0;
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
@@ -634,6 +634,7 @@ const roles_decorator_1 = __webpack_require__(/*! ../auth/decorators/roles.decor
 const member_enum_1 = __webpack_require__(/*! ../../libs/enums/member.enum */ "./apps/dvs-api/src/libs/enums/member.enum.ts");
 const roles_guard_1 = __webpack_require__(/*! ../auth/guards/roles.guard */ "./apps/dvs-api/src/components/auth/guards/roles.guard.ts");
 const member_update_1 = __webpack_require__(/*! ../../libs/dto/member/member.update */ "./apps/dvs-api/src/libs/dto/member/member.update.ts");
+const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/dvs-api/src/libs/config.ts");
 let MemberResolver = class MemberResolver {
     constructor(memberService) {
         this.memberService = memberService;
@@ -646,10 +647,6 @@ let MemberResolver = class MemberResolver {
         console.log('Mutation login');
         console.log('Mutation', input);
         return this.memberService.login(input);
-    }
-    async getMember() {
-        console.log('Query gerMember');
-        return this.memberService.getMember();
     }
     async checkAuth(memberNick) {
         console.log('Query checkAuth');
@@ -665,13 +662,10 @@ let MemberResolver = class MemberResolver {
         delete input._id;
         return await this.memberService.updateMember(memberId, input);
     }
-    async getAllMembersByAdmin() {
-        console.log('mutation: getAllMembersByAdmin ');
-        return this.memberService.getMember();
-    }
-    async updateMemberByAdmin() {
-        console.log('mutation: updateMemberByAdmin');
-        return this.memberService.getMember();
+    async getMember(input) {
+        console.log('Query gerMember');
+        const targetId = (0, config_1.shapeIntoMongoObjectId)(input);
+        return this.memberService.getMember(targetId);
     }
 };
 exports.MemberResolver = MemberResolver;
@@ -690,18 +684,12 @@ __decorate([
     __metadata("design:returntype", typeof (_e = typeof Promise !== "undefined" && Promise) === "function" ? _e : Object)
 ], MemberResolver.prototype, "login", null);
 __decorate([
-    (0, graphql_1.Query)(() => String),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
-    __metadata("design:returntype", typeof (_f = typeof Promise !== "undefined" && Promise) === "function" ? _f : Object)
-], MemberResolver.prototype, "getMember", null);
-__decorate([
     (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
     (0, graphql_1.Query)(() => String),
     __param(0, (0, authMember_decorator_1.AuthMember)('memberNick')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", typeof (_g = typeof Promise !== "undefined" && Promise) === "function" ? _g : Object)
+    __metadata("design:returntype", typeof (_f = typeof Promise !== "undefined" && Promise) === "function" ? _f : Object)
 ], MemberResolver.prototype, "checkAuth", null);
 __decorate([
     (0, roles_decorator_1.Roles)(member_enum_1.MemberType.USER, member_enum_1.MemberType.ADMIN),
@@ -709,8 +697,8 @@ __decorate([
     (0, graphql_1.Query)(() => String),
     __param(0, (0, authMember_decorator_1.AuthMember)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [typeof (_h = typeof member_1.Member !== "undefined" && member_1.Member) === "function" ? _h : Object]),
-    __metadata("design:returntype", typeof (_j = typeof Promise !== "undefined" && Promise) === "function" ? _j : Object)
+    __metadata("design:paramtypes", [typeof (_g = typeof member_1.Member !== "undefined" && member_1.Member) === "function" ? _g : Object]),
+    __metadata("design:returntype", typeof (_h = typeof Promise !== "undefined" && Promise) === "function" ? _h : Object)
 ], MemberResolver.prototype, "checkAuthRoles", null);
 __decorate([
     (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
@@ -718,23 +706,16 @@ __decorate([
     __param(0, (0, graphql_1.Args)('input')),
     __param(1, (0, authMember_decorator_1.AuthMember)('_id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [typeof (_k = typeof member_update_1.MemberUpdate !== "undefined" && member_update_1.MemberUpdate) === "function" ? _k : Object, typeof (_l = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _l : Object]),
-    __metadata("design:returntype", typeof (_m = typeof Promise !== "undefined" && Promise) === "function" ? _m : Object)
+    __metadata("design:paramtypes", [typeof (_j = typeof member_update_1.MemberUpdate !== "undefined" && member_update_1.MemberUpdate) === "function" ? _j : Object, typeof (_k = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _k : Object]),
+    __metadata("design:returntype", typeof (_l = typeof Promise !== "undefined" && Promise) === "function" ? _l : Object)
 ], MemberResolver.prototype, "updateMember", null);
 __decorate([
-    (0, roles_decorator_1.Roles)(member_enum_1.MemberType.ADMIN),
-    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
-    (0, graphql_1.Mutation)(() => String),
+    (0, graphql_1.Query)(() => member_1.Member),
+    __param(0, (0, graphql_1.Args)('memberId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
-    __metadata("design:returntype", typeof (_o = typeof Promise !== "undefined" && Promise) === "function" ? _o : Object)
-], MemberResolver.prototype, "getAllMembersByAdmin", null);
-__decorate([
-    (0, graphql_1.Mutation)(() => String),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
-    __metadata("design:returntype", typeof (_p = typeof Promise !== "undefined" && Promise) === "function" ? _p : Object)
-], MemberResolver.prototype, "updateMemberByAdmin", null);
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", typeof (_m = typeof Promise !== "undefined" && Promise) === "function" ? _m : Object)
+], MemberResolver.prototype, "getMember", null);
 exports.MemberResolver = MemberResolver = __decorate([
     (0, graphql_1.Resolver)(),
     __metadata("design:paramtypes", [typeof (_a = typeof member_service_1.MemberService !== "undefined" && member_service_1.MemberService) === "function" ? _a : Object])
@@ -818,8 +799,17 @@ let MemberService = class MemberService {
         result.accessToken = await this.authService.createToken(result);
         return result;
     }
-    async getMember() {
-        return 'getMember executed!';
+    async getMember(targetId) {
+        const search = {
+            _id: targetId,
+            memberStatus: {
+                $in: [member_enum_1.MemberStatus.ACTIVE, member_enum_1.MemberStatus.BLOCK],
+            },
+        };
+        const targetMember = await this.memberModel.findOne(search).exec();
+        if (!targetMember)
+            throw new common_1.InternalServerErrorException(common_enum_1.Message.NO_DATA_FOUND);
+        return targetMember;
     }
 };
 exports.MemberService = MemberService;
@@ -956,6 +946,24 @@ exports.DatabaseModule = DatabaseModule = __decorate([
     __param(0, (0, mongoose_1.InjectConnection)()),
     __metadata("design:paramtypes", [typeof (_a = typeof mongoose_2.Connection !== "undefined" && mongoose_2.Connection) === "function" ? _a : Object])
 ], DatabaseModule);
+
+
+/***/ }),
+
+/***/ "./apps/dvs-api/src/libs/config.ts":
+/*!*****************************************!*\
+  !*** ./apps/dvs-api/src/libs/config.ts ***!
+  \*****************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.shapeIntoMongoObjectId = void 0;
+const bson_1 = __webpack_require__(/*! bson */ "bson");
+const shapeIntoMongoObjectId = (target) => {
+    return typeof target === 'string' ? new bson_1.ObjectId(target) : target;
+};
+exports.shapeIntoMongoObjectId = shapeIntoMongoObjectId;
 
 
 /***/ }),
@@ -1572,6 +1580,16 @@ module.exports = require("@nestjs/mongoose");
 /***/ ((module) => {
 
 module.exports = require("bcryptjs");
+
+/***/ }),
+
+/***/ "bson":
+/*!***********************!*\
+  !*** external "bson" ***!
+  \***********************/
+/***/ ((module) => {
+
+module.exports = require("bson");
 
 /***/ }),
 

@@ -10,6 +10,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { MemberType } from '../../libs/enums/member.enum';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { MemberUpdate } from '../../libs/dto/member/member.update';
+import { shapeIntoMongoObjectId } from '../../libs/config';
 
 @Resolver()
 export class MemberResolver {
@@ -29,13 +30,6 @@ export class MemberResolver {
 		console.log('Mutation login');
 		console.log('Mutation', input);
 		return this.memberService.login(input);
-	}
-
-	//---------------------getmemeber-------------------------------------
-	@Query(() => String)
-	public async getMember(): Promise<string> {
-		console.log('Query gerMember');
-		return this.memberService.getMember();
 	}
 
 	//---------------------checkAuth-------------------------------------
@@ -69,23 +63,31 @@ export class MemberResolver {
 		return await this.memberService.updateMember(memberId, input);
 	}
 
+	//---------------------getmemeber-------------------------------------
+	@Query(() => Member)
+	public async getMember(@Args('memberId') input: string): Promise<Member> {
+		console.log('Query gerMember');
+		const targetId = shapeIntoMongoObjectId(input);
+		return this.memberService.getMember(targetId);
+	}
+
 	//----------------------------------------------------------
 	//---------------------ADMIN--------------------------------
 	//----------------------------------------------------------
 
 	//---------------------getAllMembersByAdmin-------------------------------------
-	@Roles(MemberType.ADMIN)
-	@UseGuards(RolesGuard)
-	@Mutation(() => String)
-	public async getAllMembersByAdmin(): Promise<string> {
-		console.log('mutation: getAllMembersByAdmin ');
-		return this.memberService.getMember();
-	}
+	// @Roles(MemberType.ADMIN)
+	// @UseGuards(RolesGuard)
+	// @Mutation(() => String)
+	// public async getAllMembersByAdmin(): Promise<string> {
+	// 	console.log('mutation: getAllMembersByAdmin ');
+	// 	return this.memberService.getMember();
+	// }
 
-	//---------------------updateMemberByAdmin-------------------------------------
-	@Mutation(() => String)
-	public async updateMemberByAdmin(): Promise<string> {
-		console.log('mutation: updateMemberByAdmin');
-		return this.memberService.getMember();
-	}
+	// //---------------------updateMemberByAdmin-------------------------------------
+	// @Mutation(() => String)
+	// public async updateMemberByAdmin(): Promise<string> {
+	// 	console.log('mutation: updateMemberByAdmin');
+	// 	return this.memberService.getMember();
+	// }
 }
