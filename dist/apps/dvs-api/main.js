@@ -674,7 +674,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o;
+var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.MemberResolver = void 0;
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
@@ -722,6 +722,10 @@ let MemberResolver = class MemberResolver {
         console.log('Query gerMember');
         const targetId = (0, config_1.shapeIntoMongoObjectId)(input);
         return this.memberService.getMember(memberId, targetId);
+    }
+    async getAgents(input, memberId) {
+        console.log('Query: getAgents');
+        return await this.memberService.getAgents(memberId, input);
     }
 };
 exports.MemberResolver = MemberResolver;
@@ -774,6 +778,15 @@ __decorate([
     __metadata("design:paramtypes", [String, typeof (_m = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _m : Object]),
     __metadata("design:returntype", typeof (_o = typeof Promise !== "undefined" && Promise) === "function" ? _o : Object)
 ], MemberResolver.prototype, "getMember", null);
+__decorate([
+    (0, common_1.UseGuards)(without_guard_1.WithoutGuard),
+    (0, graphql_1.Query)(() => member_1.Members),
+    __param(0, (0, graphql_1.Args)('input')),
+    __param(1, (0, authMember_decorator_1.AuthMember)('_id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_p = typeof member_input_1.AgentsInquiry !== "undefined" && member_input_1.AgentsInquiry) === "function" ? _p : Object, typeof (_q = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _q : Object]),
+    __metadata("design:returntype", typeof (_r = typeof Promise !== "undefined" && Promise) === "function" ? _r : Object)
+], MemberResolver.prototype, "getAgents", null);
 exports.MemberResolver = MemberResolver = __decorate([
     (0, graphql_1.Resolver)(),
     __metadata("design:paramtypes", [typeof (_a = typeof member_service_1.MemberService !== "undefined" && member_service_1.MemberService) === "function" ? _a : Object])
@@ -879,6 +892,33 @@ let MemberService = class MemberService {
             }
         }
         return targetMember;
+    }
+    async getAgents(memberId, input) {
+        const { text } = input.search;
+        const match = { memberType: member_enum_1.MemberType.AGENT, memberStatus: member_enum_1.MemberStatus.ACTIVE };
+        const sort = { [input?.sort ?? 'createdAt']: input?.direction ?? common_enum_1.Direction.DESC };
+        if (text)
+            match.memberNick = { $regex: new RegExp(text, 'i') };
+        console.log('match:', match);
+        const result = await this.memberModel
+            .aggregate([
+            { $match: match },
+            { $sort: sort },
+            {
+                $facet: {
+                    list: [
+                        { $skip: (input.page - 1) * input.limit },
+                        { $limit: input.limit },
+                    ],
+                    metaCounter: [{ $count: 'total' }],
+                },
+            },
+        ])
+            .exec();
+        console.log('result:', result);
+        if (!result.length)
+            throw new common_1.InternalServerErrorException(common_enum_1.Message.NO_DATA_FOUND);
+        return result[0];
     }
 };
 exports.MemberService = MemberService;
@@ -1088,8 +1128,9 @@ exports.DatabaseModule = DatabaseModule = __decorate([
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.shapeIntoMongoObjectId = void 0;
+exports.shapeIntoMongoObjectId = exports.availableAgentSorts = void 0;
 const bson_1 = __webpack_require__(/*! bson */ "bson");
+exports.availableAgentSorts = ['createdAt', 'updaetdAt', 'memberLikes', 'memberViews', 'memberRank'];
 const shapeIntoMongoObjectId = (target) => {
     return typeof target === 'string' ? new bson_1.ObjectId(target) : target;
 };
@@ -1114,12 +1155,14 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var _a, _b;
+var _a, _b, _c;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.LoginInput = exports.MemberInput = void 0;
+exports.AgentsInquiry = exports.LoginInput = exports.MemberInput = void 0;
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
 const class_validator_1 = __webpack_require__(/*! class-validator */ "class-validator");
 const member_enum_1 = __webpack_require__(/*! ../../enums/member.enum */ "./apps/dvs-api/src/libs/enums/member.enum.ts");
+const config_1 = __webpack_require__(/*! ../../config */ "./apps/dvs-api/src/libs/config.ts");
+const common_enum_1 = __webpack_require__(/*! ../../enums/common.enum */ "./apps/dvs-api/src/libs/enums/common.enum.ts");
 let MemberInput = class MemberInput {
 };
 exports.MemberInput = MemberInput;
@@ -1171,6 +1214,50 @@ __decorate([
 exports.LoginInput = LoginInput = __decorate([
     (0, graphql_1.InputType)()
 ], LoginInput);
+let AISearch = class AISearch {
+};
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], AISearch.prototype, "text", void 0);
+AISearch = __decorate([
+    (0, graphql_1.InputType)()
+], AISearch);
+let AgentsInquiry = class AgentsInquiry {
+};
+exports.AgentsInquiry = AgentsInquiry;
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.Min)(1),
+    (0, graphql_1.Field)(() => graphql_1.Int),
+    __metadata("design:type", Number)
+], AgentsInquiry.prototype, "page", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.Min)(1),
+    (0, graphql_1.Field)(() => graphql_1.Int),
+    __metadata("design:type", Number)
+], AgentsInquiry.prototype, "limit", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsIn)(config_1.availableAgentSorts),
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], AgentsInquiry.prototype, "sort", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => common_enum_1.Direction, { nullable: true }),
+    __metadata("design:type", typeof (_c = typeof common_enum_1.Direction !== "undefined" && common_enum_1.Direction) === "function" ? _c : Object)
+], AgentsInquiry.prototype, "direction", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, graphql_1.Field)(() => AISearch),
+    __metadata("design:type", AISearch)
+], AgentsInquiry.prototype, "search", void 0);
+exports.AgentsInquiry = AgentsInquiry = __decorate([
+    (0, graphql_1.InputType)()
+], AgentsInquiry);
 
 
 /***/ }),
@@ -1193,7 +1280,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 var _a, _b, _c, _d, _e, _f, _g;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.Member = void 0;
+exports.Members = exports.TotalCounter = exports.Member = void 0;
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
 const member_enum_1 = __webpack_require__(/*! ../../enums/member.enum */ "./apps/dvs-api/src/libs/enums/member.enum.ts");
 const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
@@ -1303,6 +1390,30 @@ __decorate([
 exports.Member = Member = __decorate([
     (0, graphql_1.ObjectType)()
 ], Member);
+let TotalCounter = class TotalCounter {
+};
+exports.TotalCounter = TotalCounter;
+__decorate([
+    (0, graphql_1.Field)(() => graphql_1.Int, { nullable: true }),
+    __metadata("design:type", Number)
+], TotalCounter.prototype, "total", void 0);
+exports.TotalCounter = TotalCounter = __decorate([
+    (0, graphql_1.ObjectType)()
+], TotalCounter);
+let Members = class Members {
+};
+exports.Members = Members;
+__decorate([
+    (0, graphql_1.Field)(() => [Member]),
+    __metadata("design:type", Array)
+], Members.prototype, "list", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => [TotalCounter], { nullable: true }),
+    __metadata("design:type", Array)
+], Members.prototype, "metaCounter", void 0);
+exports.Members = Members = __decorate([
+    (0, graphql_1.ObjectType)()
+], Members);
 
 
 /***/ }),
@@ -1397,11 +1508,12 @@ exports.MemberUpdate = MemberUpdate = __decorate([
 /*!****************************************************!*\
   !*** ./apps/dvs-api/src/libs/enums/common.enum.ts ***!
   \****************************************************/
-/***/ ((__unused_webpack_module, exports) => {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.Message = void 0;
+exports.Direction = exports.Message = void 0;
+const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
 var Message;
 (function (Message) {
     Message["SOMETHING_WENT_WRONG"] = "Something went wrong!";
@@ -1423,6 +1535,14 @@ var Message;
     Message["SELF_SUBSCRIPTION_DENIED"] = "Self subscription is denied!";
     Message["ONLY_SPECIFIC_ROLES_ALLOWED"] = "Allowed only for members with specific roles!";
 })(Message || (exports.Message = Message = {}));
+var Direction;
+(function (Direction) {
+    Direction[Direction["ASC"] = 1] = "ASC";
+    Direction[Direction["DESC"] = -1] = "DESC";
+})(Direction || (exports.Direction = Direction = {}));
+(0, graphql_1.registerEnumType)(Direction, {
+    name: 'Direction',
+});
 
 
 /***/ }),
