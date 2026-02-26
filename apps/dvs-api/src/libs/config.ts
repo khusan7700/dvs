@@ -1,12 +1,11 @@
 import { ObjectId } from 'bson';
-import { v4 as uuidv4 } from 'uuid';
-import * as path from 'path';
-import { T } from './types/common';
 
 export const availableAgentSorts = ['createdAt', 'updatedAt', 'memberLikes', 'memberViews', 'memberRank'];
 export const availableMemberSorts = ['createdAt', 'updatedAt', 'memberLikes', 'memberViews'];
 
-/* IMAGE CONFIGURATION (config.js) */
+/* IMAGE CONFIGURATION */
+import * as path from 'path';
+import { v4 as uuidv4 } from 'uuid';
 export const validMimeTypes = ['image/png', 'image/jpg', 'image/jpeg'];
 export const getSerialForImage = (filename: string) => {
 	const ext = path.parse(filename).ext;
@@ -16,6 +15,3 @@ export const getSerialForImage = (filename: string) => {
 export const shapeIntoMongoObjectId = (target: any) => {
 	return typeof target === 'string' ? new ObjectId(target) : target;
 };
-function uuidv4() {
-	throw new Error('Function not implemented.');
-}

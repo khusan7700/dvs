@@ -674,7 +674,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v;
+var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.MemberResolver = void 0;
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
@@ -691,6 +691,9 @@ const roles_guard_1 = __webpack_require__(/*! ../auth/guards/roles.guard */ "./a
 const member_update_1 = __webpack_require__(/*! ../../libs/dto/member/member.update */ "./apps/dvs-api/src/libs/dto/member/member.update.ts");
 const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/dvs-api/src/libs/config.ts");
 const without_guard_1 = __webpack_require__(/*! ../auth/guards/without.guard */ "./apps/dvs-api/src/components/auth/guards/without.guard.ts");
+const graphql_upload_1 = __webpack_require__(/*! graphql-upload */ "graphql-upload");
+const fs_1 = __webpack_require__(/*! fs */ "fs");
+const common_enum_1 = __webpack_require__(/*! ../../libs/enums/common.enum */ "./apps/dvs-api/src/libs/enums/common.enum.ts");
 let MemberResolver = class MemberResolver {
     constructor(memberService) {
         this.memberService = memberService;
@@ -734,6 +737,55 @@ let MemberResolver = class MemberResolver {
     async updateMemberByAdmin(input) {
         console.log('Mutation: updateMemberByAdmin');
         return await this.memberService.updateMemberByAdmin(input);
+    }
+    async imageUploader({ createReadStream, filename, mimetype }, target) {
+        console.log('Mutation: imageUploader');
+        if (!filename)
+            throw new Error(common_enum_1.Message.UPLOAD_FAILED);
+        const validMime = config_1.validMimeTypes.includes(mimetype);
+        if (!validMime)
+            throw new Error(common_enum_1.Message.PROVIDE_ALLOWED_FORMAT);
+        const imageName = (0, config_1.getSerialForImage)(filename);
+        const url = `uploads/${target}/${imageName}`;
+        const stream = createReadStream();
+        const result = await new Promise((resolve, reject) => {
+            stream
+                .pipe((0, fs_1.createWriteStream)(url))
+                .on('finish', async () => resolve(true))
+                .on('error', () => reject(false));
+        });
+        if (!result)
+            throw new Error(common_enum_1.Message.UPLOAD_FAILED);
+        return url;
+    }
+    async imagesUploader(files, target) {
+        console.log('Mutation: imagesUploader');
+        const uploadedImages = [];
+        const promisedList = files.map(async (img, index) => {
+            try {
+                const { filename, mimetype, encoding, createReadStream } = await img;
+                const validMime = config_1.validMimeTypes.includes(mimetype);
+                if (!validMime)
+                    throw new Error(common_enum_1.Message.PROVIDE_ALLOWED_FORMAT);
+                const imageName = (0, config_1.getSerialForImage)(filename);
+                const url = `uploads/${target}/${imageName}`;
+                const stream = createReadStream();
+                const result = await new Promise((resolve, reject) => {
+                    stream
+                        .pipe((0, fs_1.createWriteStream)(url))
+                        .on('finish', () => resolve(true))
+                        .on('error', () => reject(false));
+                });
+                if (!result)
+                    throw new Error(common_enum_1.Message.UPLOAD_FAILED);
+                uploadedImages[index] = url;
+            }
+            catch (err) {
+                console.log('Error, file missing!');
+            }
+        });
+        await Promise.all(promisedList);
+        return uploadedImages;
     }
 };
 exports.MemberResolver = MemberResolver;
@@ -813,6 +865,24 @@ __decorate([
     __metadata("design:paramtypes", [typeof (_u = typeof member_update_1.MemberUpdate !== "undefined" && member_update_1.MemberUpdate) === "function" ? _u : Object]),
     __metadata("design:returntype", typeof (_v = typeof Promise !== "undefined" && Promise) === "function" ? _v : Object)
 ], MemberResolver.prototype, "updateMemberByAdmin", null);
+__decorate([
+    (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
+    (0, graphql_1.Mutation)((returns) => String),
+    __param(0, (0, graphql_1.Args)({ name: 'file', type: () => graphql_upload_1.GraphQLUpload })),
+    __param(1, (0, graphql_1.Args)('target')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_w = typeof graphql_upload_1.FileUpload !== "undefined" && graphql_upload_1.FileUpload) === "function" ? _w : Object, typeof (_x = typeof String !== "undefined" && String) === "function" ? _x : Object]),
+    __metadata("design:returntype", typeof (_y = typeof Promise !== "undefined" && Promise) === "function" ? _y : Object)
+], MemberResolver.prototype, "imageUploader", null);
+__decorate([
+    (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
+    (0, graphql_1.Mutation)((returns) => [String]),
+    __param(0, (0, graphql_1.Args)('files', { type: () => [graphql_upload_1.GraphQLUpload] })),
+    __param(1, (0, graphql_1.Args)('target')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Array, typeof (_z = typeof String !== "undefined" && String) === "function" ? _z : Object]),
+    __metadata("design:returntype", typeof (_0 = typeof Promise !== "undefined" && Promise) === "function" ? _0 : Object)
+], MemberResolver.prototype, "imagesUploader", null);
 exports.MemberResolver = MemberResolver = __decorate([
     (0, graphql_1.Resolver)(),
     __metadata("design:paramtypes", [typeof (_a = typeof member_service_1.MemberService !== "undefined" && member_service_1.MemberService) === "function" ? _a : Object])
@@ -1187,10 +1257,18 @@ exports.DatabaseModule = DatabaseModule = __decorate([
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.shapeIntoMongoObjectId = exports.availableMemberSorts = exports.availableAgentSorts = void 0;
+exports.shapeIntoMongoObjectId = exports.getSerialForImage = exports.validMimeTypes = exports.availableMemberSorts = exports.availableAgentSorts = void 0;
 const bson_1 = __webpack_require__(/*! bson */ "bson");
 exports.availableAgentSorts = ['createdAt', 'updatedAt', 'memberLikes', 'memberViews', 'memberRank'];
 exports.availableMemberSorts = ['createdAt', 'updatedAt', 'memberLikes', 'memberViews'];
+const path = __webpack_require__(/*! path */ "path");
+const uuid_1 = __webpack_require__(/*! uuid */ "uuid");
+exports.validMimeTypes = ['image/png', 'image/jpg', 'image/jpeg'];
+const getSerialForImage = (filename) => {
+    const ext = path.parse(filename).ext;
+    return (0, uuid_1.v4)() + ext;
+};
+exports.getSerialForImage = getSerialForImage;
 const shapeIntoMongoObjectId = (target) => {
     return typeof target === 'string' ? new bson_1.ObjectId(target) : target;
 };
@@ -2024,6 +2102,26 @@ module.exports = require("class-validator");
 
 /***/ }),
 
+/***/ "express":
+/*!**************************!*\
+  !*** external "express" ***!
+  \**************************/
+/***/ ((module) => {
+
+module.exports = require("express");
+
+/***/ }),
+
+/***/ "graphql-upload":
+/*!*********************************!*\
+  !*** external "graphql-upload" ***!
+  \*********************************/
+/***/ ((module) => {
+
+module.exports = require("graphql-upload");
+
+/***/ }),
+
 /***/ "mongoose":
 /*!***************************!*\
   !*** external "mongoose" ***!
@@ -2041,6 +2139,36 @@ module.exports = require("mongoose");
 /***/ ((module) => {
 
 module.exports = require("rxjs/operators");
+
+/***/ }),
+
+/***/ "uuid":
+/*!***********************!*\
+  !*** external "uuid" ***!
+  \***********************/
+/***/ ((module) => {
+
+module.exports = require("uuid");
+
+/***/ }),
+
+/***/ "fs":
+/*!*********************!*\
+  !*** external "fs" ***!
+  \*********************/
+/***/ ((module) => {
+
+module.exports = require("fs");
+
+/***/ }),
+
+/***/ "path":
+/*!***********************!*\
+  !*** external "path" ***!
+  \***********************/
+/***/ ((module) => {
+
+module.exports = require("path");
 
 /***/ })
 
@@ -2084,10 +2212,15 @@ const core_1 = __webpack_require__(/*! @nestjs/core */ "@nestjs/core");
 const app_module_1 = __webpack_require__(/*! ./app.module */ "./apps/dvs-api/src/app.module.ts");
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
 const Logging_interseptor_1 = __webpack_require__(/*! ./libs/interceptor/Logging.interseptor */ "./apps/dvs-api/src/libs/interceptor/Logging.interseptor.ts");
+const graphql_upload_1 = __webpack_require__(/*! graphql-upload */ "graphql-upload");
+const express = __webpack_require__(/*! express */ "express");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
     app.useGlobalPipes(new common_1.ValidationPipe());
     app.useGlobalInterceptors(new Logging_interseptor_1.LoggingInterceptor());
+    app.enableCors({ origin: true, credentials: true });
+    app.use((0, graphql_upload_1.graphqlUploadExpress)({ MaxFileSize: 15000000, maxFiles: 10 }));
+    app.use('/uploads', express.static('./uploads'));
     await app.listen(process.env.PORT_API ?? 3000);
 }
 bootstrap();
