@@ -1131,7 +1131,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
+var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.PropertyResolver = void 0;
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
@@ -1169,6 +1169,10 @@ let PropertyResolver = class PropertyResolver {
     async getProperties(input, memberId) {
         console.log('Query: getProperties');
         return await this.propertyService.getProperties(memberId, input);
+    }
+    async getAgentProperties(input, memberId) {
+        console.log('Mutation: getAgentProperties');
+        return await this.propertyService.getAgentProperties(memberId, input);
     }
 };
 exports.PropertyResolver = PropertyResolver;
@@ -1210,6 +1214,16 @@ __decorate([
     __metadata("design:paramtypes", [typeof (_k = typeof property_input_1.PropertiesInquiry !== "undefined" && property_input_1.PropertiesInquiry) === "function" ? _k : Object, typeof (_l = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _l : Object]),
     __metadata("design:returntype", typeof (_m = typeof Promise !== "undefined" && Promise) === "function" ? _m : Object)
 ], PropertyResolver.prototype, "getProperties", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(member_enum_1.MemberType.AGENT),
+    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
+    (0, graphql_1.Query)((returns) => property_1.Properties),
+    __param(0, (0, graphql_1.Args)('input')),
+    __param(1, (0, authMember_decorator_1.AuthMember)('_id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_o = typeof property_input_1.AgentPropertiesInquiry !== "undefined" && property_input_1.AgentPropertiesInquiry) === "function" ? _o : Object, typeof (_p = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _p : Object]),
+    __metadata("design:returntype", typeof (_q = typeof Promise !== "undefined" && Promise) === "function" ? _q : Object)
+], PropertyResolver.prototype, "getAgentProperties", null);
 exports.PropertyResolver = PropertyResolver = __decorate([
     (0, graphql_1.Resolver)(),
     __metadata("design:paramtypes", [typeof (_a = typeof property_service_1.PropertyService !== "undefined" && property_service_1.PropertyService) === "function" ? _a : Object])
@@ -1334,6 +1348,36 @@ let PropertyService = class PropertyService {
         const sort = { [input?.sort ?? 'createdAt']: input?.direction ?? common_enum_1.Direction.DESC };
         this.shapeMatchQuery(match, input);
         console.log('match:', match);
+        const result = await this.propertyModel
+            .aggregate([
+            { $match: match },
+            { $sort: sort },
+            {
+                $facet: {
+                    list: [
+                        { $skip: (input.page - 1) * input.limit },
+                        { $limit: input.limit },
+                        config_1.lookupMember,
+                        { $unwind: '$memberData' },
+                    ],
+                    metaCounter: [{ $count: 'total' }],
+                },
+            },
+        ])
+            .exec();
+        if (!result.length)
+            throw new common_1.InternalServerErrorException(common_enum_1.Message.NO_DATA_FOUND);
+        return result[0];
+    }
+    async getAgentProperties(memberId, input) {
+        const { propertyStatus } = input.search;
+        if (propertyStatus === property_enum_1.PropertyStatus.DELETE)
+            throw new common_1.BadRequestException(common_enum_1.Message.NOT_ALLOWED_REQUEST);
+        const match = {
+            memberId: memberId,
+            propertyStatus: propertyStatus ?? { $ne: property_enum_1.PropertyStatus.DELETE },
+        };
+        const sort = { [input?.sort ?? 'createdAt']: input?.direction ?? common_enum_1.Direction.DESC };
         const result = await this.propertyModel
             .aggregate([
             { $match: match },
@@ -2035,9 +2079,9 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var _a, _b, _c, _d, _e, _f, _g;
+var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.PropertiesInquiry = exports.PISearch = exports.PeriodsRange = exports.SquaresRange = exports.PricesRange = exports.PropertyInput = void 0;
+exports.OrdinaryInquiry = exports.AllPropertiesInquiry = exports.AgentPropertiesInquiry = exports.PropertiesInquiry = exports.PISearch = exports.PeriodsRange = exports.SquaresRange = exports.PricesRange = exports.PropertyInput = void 0;
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
 const class_validator_1 = __webpack_require__(/*! class-validator */ "class-validator");
 const property_enum_1 = __webpack_require__(/*! ../../enums/property.enum */ "./apps/dvs-api/src/libs/enums/property.enum.ts");
@@ -2255,6 +2299,117 @@ __decorate([
 exports.PropertiesInquiry = PropertiesInquiry = __decorate([
     (0, graphql_1.InputType)()
 ], PropertiesInquiry);
+let APISearch = class APISearch {
+};
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => property_enum_1.PropertyStatus, { nullable: true }),
+    __metadata("design:type", typeof (_h = typeof property_enum_1.PropertyStatus !== "undefined" && property_enum_1.PropertyStatus) === "function" ? _h : Object)
+], APISearch.prototype, "propertyStatus", void 0);
+APISearch = __decorate([
+    (0, graphql_1.InputType)()
+], APISearch);
+let AgentPropertiesInquiry = class AgentPropertiesInquiry {
+};
+exports.AgentPropertiesInquiry = AgentPropertiesInquiry;
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.Min)(1),
+    (0, graphql_1.Field)(() => graphql_1.Int),
+    __metadata("design:type", Number)
+], AgentPropertiesInquiry.prototype, "page", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.Min)(1),
+    (0, graphql_1.Field)(() => graphql_1.Int),
+    __metadata("design:type", Number)
+], AgentPropertiesInquiry.prototype, "limit", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsIn)(config_1.availablePropertySorts),
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], AgentPropertiesInquiry.prototype, "sort", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => common_enum_1.Direction, { nullable: true }),
+    __metadata("design:type", typeof (_j = typeof common_enum_1.Direction !== "undefined" && common_enum_1.Direction) === "function" ? _j : Object)
+], AgentPropertiesInquiry.prototype, "direction", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, graphql_1.Field)(() => APISearch),
+    __metadata("design:type", APISearch)
+], AgentPropertiesInquiry.prototype, "search", void 0);
+exports.AgentPropertiesInquiry = AgentPropertiesInquiry = __decorate([
+    (0, graphql_1.InputType)()
+], AgentPropertiesInquiry);
+let ALPISerach = class ALPISerach {
+};
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => property_enum_1.PropertyStatus, { nullable: true }),
+    __metadata("design:type", typeof (_k = typeof property_enum_1.PropertyStatus !== "undefined" && property_enum_1.PropertyStatus) === "function" ? _k : Object)
+], ALPISerach.prototype, "propertyStatus", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => [property_enum_1.PropertyLocation], { nullable: true }),
+    __metadata("design:type", Array)
+], ALPISerach.prototype, "propertyLocationList", void 0);
+ALPISerach = __decorate([
+    (0, graphql_1.InputType)()
+], ALPISerach);
+let AllPropertiesInquiry = class AllPropertiesInquiry {
+};
+exports.AllPropertiesInquiry = AllPropertiesInquiry;
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.Min)(1),
+    (0, graphql_1.Field)(() => graphql_1.Int),
+    __metadata("design:type", Number)
+], AllPropertiesInquiry.prototype, "page", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.Min)(1),
+    (0, graphql_1.Field)(() => graphql_1.Int),
+    __metadata("design:type", Number)
+], AllPropertiesInquiry.prototype, "limit", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsIn)(config_1.availablePropertySorts),
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], AllPropertiesInquiry.prototype, "sort", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => common_enum_1.Direction, { nullable: true }),
+    __metadata("design:type", typeof (_l = typeof common_enum_1.Direction !== "undefined" && common_enum_1.Direction) === "function" ? _l : Object)
+], AllPropertiesInquiry.prototype, "direction", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => ALPISerach),
+    __metadata("design:type", ALPISerach)
+], AllPropertiesInquiry.prototype, "search", void 0);
+exports.AllPropertiesInquiry = AllPropertiesInquiry = __decorate([
+    (0, graphql_1.InputType)()
+], AllPropertiesInquiry);
+let OrdinaryInquiry = class OrdinaryInquiry {
+};
+exports.OrdinaryInquiry = OrdinaryInquiry;
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.Min)(1),
+    (0, graphql_1.Field)(() => graphql_1.Int),
+    __metadata("design:type", Number)
+], OrdinaryInquiry.prototype, "page", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.Min)(1),
+    (0, graphql_1.Field)(() => graphql_1.Int),
+    __metadata("design:type", Number)
+], OrdinaryInquiry.prototype, "limit", void 0);
+exports.OrdinaryInquiry = OrdinaryInquiry = __decorate([
+    (0, graphql_1.InputType)()
+], OrdinaryInquiry);
 
 
 /***/ }),

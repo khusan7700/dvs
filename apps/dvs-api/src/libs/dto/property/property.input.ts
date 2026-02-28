@@ -166,7 +166,7 @@ export class PropertiesInquiry {
 	@Field(() => PISearch)
 	search: PISearch;
 }
-/*
+
 @InputType()
 class APISearch {
 	@IsOptional()
@@ -249,5 +249,3 @@ export class OrdinaryInquiry {
 	@Field(() => Int)
 	limit: number;
 }
-
-*/
