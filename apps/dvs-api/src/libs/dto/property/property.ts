@@ -85,8 +85,8 @@ export class Property {
 
 	/** from aggregation **/
 
-	// @Field(() => Member, { nullable: true })
-	// memberData?: Member;
+	@Field(() => Member, { nullable: true })
+	memberData?: Member;
 }
 
 @ObjectType()

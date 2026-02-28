@@ -1131,7 +1131,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var _a, _b, _c, _d;
+var _a, _b, _c, _d, _e, _f;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.PropertyResolver = void 0;
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
@@ -1144,6 +1144,8 @@ const roles_guard_1 = __webpack_require__(/*! ../auth/guards/roles.guard */ "./a
 const authMember_decorator_1 = __webpack_require__(/*! ../auth/decorators/authMember.decorator */ "./apps/dvs-api/src/components/auth/decorators/authMember.decorator.ts");
 const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
 const property_input_1 = __webpack_require__(/*! ../../libs/dto/property/property.input */ "./apps/dvs-api/src/libs/dto/property/property.input.ts");
+const without_guard_1 = __webpack_require__(/*! ../auth/guards/without.guard */ "./apps/dvs-api/src/components/auth/guards/without.guard.ts");
+const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/dvs-api/src/libs/config.ts");
 let PropertyResolver = class PropertyResolver {
     constructor(propertyService) {
         this.propertyService = propertyService;
@@ -1152,6 +1154,11 @@ let PropertyResolver = class PropertyResolver {
         console.log('Mutation: createProperty');
         input.memberId = memberId;
         return await this.propertyService.createProperty(input);
+    }
+    async getProperty(input, memberId) {
+        console.log('Query: getProperty');
+        const propertyId = (0, config_1.shapeIntoMongoObjectId)(input);
+        return await this.propertyService.getProperty(memberId, propertyId);
     }
 };
 exports.PropertyResolver = PropertyResolver;
@@ -1165,6 +1172,15 @@ __decorate([
     __metadata("design:paramtypes", [typeof (_b = typeof property_input_1.PropertyInput !== "undefined" && property_input_1.PropertyInput) === "function" ? _b : Object, typeof (_c = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _c : Object]),
     __metadata("design:returntype", typeof (_d = typeof Promise !== "undefined" && Promise) === "function" ? _d : Object)
 ], PropertyResolver.prototype, "createProperty", null);
+__decorate([
+    (0, common_1.UseGuards)(without_guard_1.WithoutGuard),
+    (0, graphql_1.Query)((returns) => property_1.Property),
+    __param(0, (0, graphql_1.Args)('propertyId')),
+    __param(1, (0, authMember_decorator_1.AuthMember)('_id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, typeof (_e = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _e : Object]),
+    __metadata("design:returntype", typeof (_f = typeof Promise !== "undefined" && Promise) === "function" ? _f : Object)
+], PropertyResolver.prototype, "getProperty", null);
 exports.PropertyResolver = PropertyResolver = __decorate([
     (0, graphql_1.Resolver)(),
     __metadata("design:paramtypes", [typeof (_a = typeof property_service_1.PropertyService !== "undefined" && property_service_1.PropertyService) === "function" ? _a : Object])
@@ -1200,7 +1216,9 @@ const mongoose_1 = __webpack_require__(/*! @nestjs/mongoose */ "@nestjs/mongoose
 const mongoose_2 = __webpack_require__(/*! mongoose */ "mongoose");
 const common_enum_1 = __webpack_require__(/*! ../../libs/enums/common.enum */ "./apps/dvs-api/src/libs/enums/common.enum.ts");
 const member_service_1 = __webpack_require__(/*! ../member/member.service */ "./apps/dvs-api/src/components/member/member.service.ts");
+const property_enum_1 = __webpack_require__(/*! ../../libs/enums/property.enum */ "./apps/dvs-api/src/libs/enums/property.enum.ts");
 const view_service_1 = __webpack_require__(/*! ../view/view.service */ "./apps/dvs-api/src/components/view/view.service.ts");
+const view_enum_1 = __webpack_require__(/*! ../../libs/enums/view.enum */ "./apps/dvs-api/src/libs/enums/view.enum.ts");
 const auth_service_1 = __webpack_require__(/*! ../auth/auth.service */ "./apps/dvs-api/src/components/auth/auth.service.ts");
 let PropertyService = class PropertyService {
     constructor(propertyModel, memberService, authService, viewService) {
@@ -1223,6 +1241,35 @@ let PropertyService = class PropertyService {
             console.log('Error, Service.model:', err.message);
             throw new common_1.BadRequestException(common_enum_1.Message.CREATE_FAILED);
         }
+    }
+    async getProperty(memberId, propertyId) {
+        const search = {
+            _id: propertyId,
+            propertyStatus: property_enum_1.PropertyStatus.ACTIVE,
+        };
+        const targetProperty = await this.propertyModel.findOne(search).lean().exec();
+        if (!targetProperty)
+            throw new common_1.InternalServerErrorException(common_enum_1.Message.NO_DATA_FOUND);
+        if (memberId) {
+            const viewInput = {
+                memberId: memberId,
+                viewRefId: propertyId,
+                viewGroup: view_enum_1.ViewGroup.PROPERTY,
+            };
+            const newView = await this.viewService.recordView(viewInput);
+            if (newView) {
+                await this.propertyStatsEditor({ _id: propertyId, targetKey: 'propertyViews', modifier: 1 });
+                targetProperty.propertyViews++;
+            }
+        }
+        targetProperty.memberData = await this.memberService.getMember(null, targetProperty.memberId);
+        return targetProperty;
+    }
+    async propertyStatsEditor(input) {
+        const { _id, targetKey, modifier } = input;
+        return await this.propertyModel
+            .findByIdAndUpdate(_id, { $inc: { [targetKey]: modifier } }, { new: true })
+            .exec();
     }
 };
 exports.PropertyService = PropertyService;
@@ -1993,7 +2040,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
+var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Properties = exports.Property = void 0;
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
@@ -2099,6 +2146,10 @@ __decorate([
     (0, graphql_1.Field)(() => Date),
     __metadata("design:type", typeof (_k = typeof Date !== "undefined" && Date) === "function" ? _k : Object)
 ], Property.prototype, "updatedAt", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => member_1.Member, { nullable: true }),
+    __metadata("design:type", typeof (_l = typeof member_1.Member !== "undefined" && member_1.Member) === "function" ? _l : Object)
+], Property.prototype, "memberData", void 0);
 exports.Property = Property = __decorate([
     (0, graphql_1.ObjectType)()
 ], Property);
