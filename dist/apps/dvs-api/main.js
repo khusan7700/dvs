@@ -1131,7 +1131,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var _a, _b, _c, _d, _e, _f;
+var _a, _b, _c, _d, _e, _f, _g, _h, _j;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.PropertyResolver = void 0;
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
@@ -1146,6 +1146,7 @@ const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
 const property_input_1 = __webpack_require__(/*! ../../libs/dto/property/property.input */ "./apps/dvs-api/src/libs/dto/property/property.input.ts");
 const without_guard_1 = __webpack_require__(/*! ../auth/guards/without.guard */ "./apps/dvs-api/src/components/auth/guards/without.guard.ts");
 const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/dvs-api/src/libs/config.ts");
+const property_update_1 = __webpack_require__(/*! ../../libs/dto/property/property.update */ "./apps/dvs-api/src/libs/dto/property/property.update.ts");
 let PropertyResolver = class PropertyResolver {
     constructor(propertyService) {
         this.propertyService = propertyService;
@@ -1159,6 +1160,11 @@ let PropertyResolver = class PropertyResolver {
         console.log('Query: getProperty');
         const propertyId = (0, config_1.shapeIntoMongoObjectId)(input);
         return await this.propertyService.getProperty(memberId, propertyId);
+    }
+    async updateProperty(input, memberId) {
+        console.log('Mutation: updateProperty');
+        input._id = (0, config_1.shapeIntoMongoObjectId)(input._id);
+        return await this.propertyService.updateProperty(memberId, input);
     }
 };
 exports.PropertyResolver = PropertyResolver;
@@ -1181,6 +1187,16 @@ __decorate([
     __metadata("design:paramtypes", [String, typeof (_e = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _e : Object]),
     __metadata("design:returntype", typeof (_f = typeof Promise !== "undefined" && Promise) === "function" ? _f : Object)
 ], PropertyResolver.prototype, "getProperty", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(member_enum_1.MemberType.AGENT),
+    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
+    (0, graphql_1.Mutation)((returns) => property_1.Property),
+    __param(0, (0, graphql_1.Args)('input')),
+    __param(1, (0, authMember_decorator_1.AuthMember)('_id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_g = typeof property_update_1.PropertyUpdate !== "undefined" && property_update_1.PropertyUpdate) === "function" ? _g : Object, typeof (_h = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _h : Object]),
+    __metadata("design:returntype", typeof (_j = typeof Promise !== "undefined" && Promise) === "function" ? _j : Object)
+], PropertyResolver.prototype, "updateProperty", null);
 exports.PropertyResolver = PropertyResolver = __decorate([
     (0, graphql_1.Resolver)(),
     __metadata("design:paramtypes", [typeof (_a = typeof property_service_1.PropertyService !== "undefined" && property_service_1.PropertyService) === "function" ? _a : Object])
@@ -1219,6 +1235,7 @@ const member_service_1 = __webpack_require__(/*! ../member/member.service */ "./
 const property_enum_1 = __webpack_require__(/*! ../../libs/enums/property.enum */ "./apps/dvs-api/src/libs/enums/property.enum.ts");
 const view_service_1 = __webpack_require__(/*! ../view/view.service */ "./apps/dvs-api/src/components/view/view.service.ts");
 const view_enum_1 = __webpack_require__(/*! ../../libs/enums/view.enum */ "./apps/dvs-api/src/libs/enums/view.enum.ts");
+const moment = __webpack_require__(/*! moment */ "moment");
 const auth_service_1 = __webpack_require__(/*! ../auth/auth.service */ "./apps/dvs-api/src/components/auth/auth.service.ts");
 let PropertyService = class PropertyService {
     constructor(propertyModel, memberService, authService, viewService) {
@@ -1270,6 +1287,33 @@ let PropertyService = class PropertyService {
         return await this.propertyModel
             .findByIdAndUpdate(_id, { $inc: { [targetKey]: modifier } }, { new: true })
             .exec();
+    }
+    async updateProperty(memberId, input) {
+        let { propertyStatus, soldAt, deletedAt } = input;
+        const search = {
+            _id: input._id,
+            memberId: memberId,
+            propertyStatus: property_enum_1.PropertyStatus.ACTIVE,
+        };
+        if (propertyStatus === property_enum_1.PropertyStatus.SOLD)
+            soldAt = moment().toDate();
+        else if (propertyStatus === property_enum_1.PropertyStatus.DELETE)
+            deletedAt = moment().toDate();
+        const result = await this.propertyModel
+            .findByIdAndUpdate(search, input, {
+            new: true,
+        })
+            .exec();
+        if (!result)
+            throw new common_1.InternalServerErrorException(common_enum_1.Message.UPDATE_FAILED);
+        if (soldAt || deletedAt) {
+            await this.memberService.memberStatsEditor({
+                _id: memberId,
+                targetKey: 'memberProperties',
+                modifier: -1,
+            });
+        }
+        return result;
     }
 };
 exports.PropertyService = PropertyService;
@@ -2171,6 +2215,121 @@ exports.Properties = Properties = __decorate([
 
 /***/ }),
 
+/***/ "./apps/dvs-api/src/libs/dto/property/property.update.ts":
+/*!***************************************************************!*\
+  !*** ./apps/dvs-api/src/libs/dto/property/property.update.ts ***!
+  \***************************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a, _b, _c, _d, _e;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.PropertyUpdate = void 0;
+const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
+const class_validator_1 = __webpack_require__(/*! class-validator */ "class-validator");
+const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
+const property_enum_1 = __webpack_require__(/*! ../../enums/property.enum */ "./apps/dvs-api/src/libs/enums/property.enum.ts");
+let PropertyUpdate = class PropertyUpdate {
+};
+exports.PropertyUpdate = PropertyUpdate;
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", typeof (_a = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _a : Object)
+], PropertyUpdate.prototype, "_id", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => property_enum_1.PropertyType, { nullable: true }),
+    __metadata("design:type", typeof (_b = typeof property_enum_1.PropertyType !== "undefined" && property_enum_1.PropertyType) === "function" ? _b : Object)
+], PropertyUpdate.prototype, "propertyType", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => property_enum_1.PropertyStatus, { nullable: true }),
+    __metadata("design:type", typeof (_c = typeof property_enum_1.PropertyStatus !== "undefined" && property_enum_1.PropertyStatus) === "function" ? _c : Object)
+], PropertyUpdate.prototype, "propertyStatus", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => property_enum_1.PropertyLocation, { nullable: true }),
+    __metadata("design:type", typeof (_d = typeof property_enum_1.PropertyLocation !== "undefined" && property_enum_1.PropertyLocation) === "function" ? _d : Object)
+], PropertyUpdate.prototype, "propertyLocation", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.Length)(3, 100),
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], PropertyUpdate.prototype, "propertyAddress", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.Length)(3, 100),
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], PropertyUpdate.prototype, "propertyTitle", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => Number, { nullable: true }),
+    __metadata("design:type", Number)
+], PropertyUpdate.prototype, "propertyPrice", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => Number, { nullable: true }),
+    __metadata("design:type", Number)
+], PropertyUpdate.prototype, "propertySquare", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsInt)(),
+    (0, class_validator_1.Min)(1),
+    (0, graphql_1.Field)(() => graphql_1.Int, { nullable: true }),
+    __metadata("design:type", Number)
+], PropertyUpdate.prototype, "propertyBeds", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsInt)(),
+    (0, class_validator_1.Min)(1),
+    (0, graphql_1.Field)(() => graphql_1.Int, { nullable: true }),
+    __metadata("design:type", Number)
+], PropertyUpdate.prototype, "propertyRooms", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => [String], { nullable: true }),
+    __metadata("design:type", Array)
+], PropertyUpdate.prototype, "propertyImages", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.Length)(5, 500),
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], PropertyUpdate.prototype, "propertyDesc", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => Boolean, { nullable: true }),
+    __metadata("design:type", Boolean)
+], PropertyUpdate.prototype, "propertyBarter", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => Boolean, { nullable: true }),
+    __metadata("design:type", Boolean)
+], PropertyUpdate.prototype, "propertyRent", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => Date, { nullable: true }),
+    __metadata("design:type", typeof (_e = typeof Date !== "undefined" && Date) === "function" ? _e : Object)
+], PropertyUpdate.prototype, "constructedAt", void 0);
+exports.PropertyUpdate = PropertyUpdate = __decorate([
+    (0, graphql_1.InputType)()
+], PropertyUpdate);
+
+
+/***/ }),
+
 /***/ "./apps/dvs-api/src/libs/enums/common.enum.ts":
 /*!****************************************************!*\
   !*** ./apps/dvs-api/src/libs/enums/common.enum.ts ***!
@@ -2743,6 +2902,16 @@ module.exports = require("express");
 /***/ ((module) => {
 
 module.exports = require("graphql-upload");
+
+/***/ }),
+
+/***/ "moment":
+/*!*************************!*\
+  !*** external "moment" ***!
+  \*************************/
+/***/ ((module) => {
+
+module.exports = require("moment");
 
 /***/ }),
 
