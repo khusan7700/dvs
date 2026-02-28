@@ -3,6 +3,7 @@ import { IsIn, IsInt, IsNotEmpty, IsOptional, Length, Min } from 'class-validato
 import { PropertyLocation, PropertyStatus, PropertyType } from '../../enums/property.enum';
 import { ObjectId } from 'mongoose';
 import { Direction } from '../../enums/common.enum';
+import { availableOptions, availablePropertySorts } from '../../config';
 // import { availableOptions, availablePropertySorts } from '../../config';
 
 @InputType()
@@ -86,7 +87,7 @@ export class SquaresRange {
 	@Field(() => Int)
 	end: number;
 }
-/*
+
 @InputType()
 export class PeriodsRange {
 	@Field(() => Date)
@@ -165,7 +166,7 @@ export class PropertiesInquiry {
 	@Field(() => PISearch)
 	search: PISearch;
 }
-
+/*
 @InputType()
 class APISearch {
 	@IsOptional()

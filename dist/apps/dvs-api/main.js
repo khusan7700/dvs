@@ -1131,7 +1131,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.PropertyResolver = void 0;
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
@@ -1166,6 +1166,10 @@ let PropertyResolver = class PropertyResolver {
         input._id = (0, config_1.shapeIntoMongoObjectId)(input._id);
         return await this.propertyService.updateProperty(memberId, input);
     }
+    async getProperties(input, memberId) {
+        console.log('Query: getProperties');
+        return await this.propertyService.getProperties(memberId, input);
+    }
 };
 exports.PropertyResolver = PropertyResolver;
 __decorate([
@@ -1197,6 +1201,15 @@ __decorate([
     __metadata("design:paramtypes", [typeof (_g = typeof property_update_1.PropertyUpdate !== "undefined" && property_update_1.PropertyUpdate) === "function" ? _g : Object, typeof (_h = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _h : Object]),
     __metadata("design:returntype", typeof (_j = typeof Promise !== "undefined" && Promise) === "function" ? _j : Object)
 ], PropertyResolver.prototype, "updateProperty", null);
+__decorate([
+    (0, common_1.UseGuards)(without_guard_1.WithoutGuard),
+    (0, graphql_1.Query)((returns) => property_1.Properties),
+    __param(0, (0, graphql_1.Args)('input')),
+    __param(1, (0, authMember_decorator_1.AuthMember)('_id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_k = typeof property_input_1.PropertiesInquiry !== "undefined" && property_input_1.PropertiesInquiry) === "function" ? _k : Object, typeof (_l = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _l : Object]),
+    __metadata("design:returntype", typeof (_m = typeof Promise !== "undefined" && Promise) === "function" ? _m : Object)
+], PropertyResolver.prototype, "getProperties", null);
 exports.PropertyResolver = PropertyResolver = __decorate([
     (0, graphql_1.Resolver)(),
     __metadata("design:paramtypes", [typeof (_a = typeof property_service_1.PropertyService !== "undefined" && property_service_1.PropertyService) === "function" ? _a : Object])
@@ -1237,6 +1250,7 @@ const view_service_1 = __webpack_require__(/*! ../view/view.service */ "./apps/d
 const view_enum_1 = __webpack_require__(/*! ../../libs/enums/view.enum */ "./apps/dvs-api/src/libs/enums/view.enum.ts");
 const moment = __webpack_require__(/*! moment */ "moment");
 const auth_service_1 = __webpack_require__(/*! ../auth/auth.service */ "./apps/dvs-api/src/components/auth/auth.service.ts");
+const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/dvs-api/src/libs/config.ts");
 let PropertyService = class PropertyService {
     constructor(propertyModel, memberService, authService, viewService) {
         this.propertyModel = propertyModel;
@@ -1314,6 +1328,58 @@ let PropertyService = class PropertyService {
             });
         }
         return result;
+    }
+    async getProperties(memberId, input) {
+        const match = { propertyStatus: property_enum_1.PropertyStatus.ACTIVE };
+        const sort = { [input?.sort ?? 'createdAt']: input?.direction ?? common_enum_1.Direction.DESC };
+        this.shapeMatchQuery(match, input);
+        console.log('match:', match);
+        const result = await this.propertyModel
+            .aggregate([
+            { $match: match },
+            { $sort: sort },
+            {
+                $facet: {
+                    list: [
+                        { $skip: (input.page - 1) * input.limit },
+                        { $limit: input.limit },
+                        config_1.lookupMember,
+                        { $unwind: '$memberData' },
+                    ],
+                    metaCounter: [{ $count: 'total' }],
+                },
+            },
+        ])
+            .exec();
+        if (!result.length)
+            throw new common_1.InternalServerErrorException(common_enum_1.Message.NO_DATA_FOUND);
+        return result[0];
+    }
+    shapeMatchQuery(match, input) {
+        const { memberId, locationList, roomsList, bedsList, typeList, periodsRange, pricesRange, squaresRange, options, text, } = input.search;
+        if (memberId)
+            match.memberId = (0, config_1.shapeIntoMongoObjectId)(memberId);
+        if (locationList && locationList.length)
+            match.propertyLocation = { $in: locationList };
+        if (roomsList && roomsList.length)
+            match.propertyRooms = { $in: roomsList };
+        if (bedsList && bedsList.length)
+            match.propertyBeds = { $in: bedsList };
+        if (typeList && typeList.length)
+            match.propertyType = { $in: typeList };
+        if (pricesRange)
+            match.propertyPrice = { $gte: pricesRange.start, $lte: pricesRange.end };
+        if (periodsRange)
+            match.createdAt = { $gte: periodsRange.start, $lte: periodsRange.end };
+        if (squaresRange)
+            match.propertySquare = { $gte: squaresRange.start, $lte: squaresRange.end };
+        if (text)
+            match.propertyTitle = { $regex: new RegExp(text, 'i') };
+        if (options) {
+            match['$or'] = options.map((ele) => {
+                return { [ele]: true };
+            });
+        }
     }
 };
 exports.PropertyService = PropertyService;
@@ -1497,10 +1563,19 @@ exports.DatabaseModule = DatabaseModule = __decorate([
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.shapeIntoMongoObjectId = exports.getSerialForImage = exports.validMimeTypes = exports.availableMemberSorts = exports.availableAgentSorts = void 0;
+exports.lookupMember = exports.shapeIntoMongoObjectId = exports.getSerialForImage = exports.validMimeTypes = exports.availablePropertySorts = exports.availableOptions = exports.availableMemberSorts = exports.availableAgentSorts = void 0;
 const bson_1 = __webpack_require__(/*! bson */ "bson");
 exports.availableAgentSorts = ['createdAt', 'updatedAt', 'memberLikes', 'memberViews', 'memberRank'];
 exports.availableMemberSorts = ['createdAt', 'updatedAt', 'memberLikes', 'memberViews'];
+exports.availableOptions = ['propertyBarter', 'propertyRent'];
+exports.availablePropertySorts = [
+    'createdAt',
+    'updatedAt',
+    'propertyLikes',
+    'propertyViews',
+    'propertyRank',
+    'propertyPrice',
+];
 const path = __webpack_require__(/*! path */ "path");
 const uuid_1 = __webpack_require__(/*! uuid */ "uuid");
 exports.validMimeTypes = ['image/png', 'image/jpg', 'image/jpeg'];
@@ -1513,6 +1588,14 @@ const shapeIntoMongoObjectId = (target) => {
     return typeof target === 'string' ? new bson_1.ObjectId(target) : target;
 };
 exports.shapeIntoMongoObjectId = shapeIntoMongoObjectId;
+exports.lookupMember = {
+    $lookup: {
+        from: 'members',
+        localField: 'memberId',
+        foreignField: '_id',
+        as: 'memberData',
+    },
+};
 
 
 /***/ }),
@@ -1952,12 +2035,15 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var _a, _b, _c;
+var _a, _b, _c, _d, _e, _f, _g;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.SquaresRange = exports.PricesRange = exports.PropertyInput = void 0;
+exports.PropertiesInquiry = exports.PISearch = exports.PeriodsRange = exports.SquaresRange = exports.PricesRange = exports.PropertyInput = void 0;
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
 const class_validator_1 = __webpack_require__(/*! class-validator */ "class-validator");
 const property_enum_1 = __webpack_require__(/*! ../../enums/property.enum */ "./apps/dvs-api/src/libs/enums/property.enum.ts");
+const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
+const common_enum_1 = __webpack_require__(/*! ../../enums/common.enum */ "./apps/dvs-api/src/libs/enums/common.enum.ts");
+const config_1 = __webpack_require__(/*! ../../config */ "./apps/dvs-api/src/libs/config.ts");
 let PropertyInput = class PropertyInput {
 };
 exports.PropertyInput = PropertyInput;
@@ -2064,6 +2150,111 @@ __decorate([
 exports.SquaresRange = SquaresRange = __decorate([
     (0, graphql_1.InputType)()
 ], SquaresRange);
+let PeriodsRange = class PeriodsRange {
+};
+exports.PeriodsRange = PeriodsRange;
+__decorate([
+    (0, graphql_1.Field)(() => Date),
+    __metadata("design:type", typeof (_d = typeof Date !== "undefined" && Date) === "function" ? _d : Object)
+], PeriodsRange.prototype, "start", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => Date),
+    __metadata("design:type", typeof (_e = typeof Date !== "undefined" && Date) === "function" ? _e : Object)
+], PeriodsRange.prototype, "end", void 0);
+exports.PeriodsRange = PeriodsRange = __decorate([
+    (0, graphql_1.InputType)()
+], PeriodsRange);
+let PISearch = class PISearch {
+};
+exports.PISearch = PISearch;
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", typeof (_f = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _f : Object)
+], PISearch.prototype, "memberId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => [property_enum_1.PropertyLocation], { nullable: true }),
+    __metadata("design:type", Array)
+], PISearch.prototype, "locationList", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => [property_enum_1.PropertyType], { nullable: true }),
+    __metadata("design:type", Array)
+], PISearch.prototype, "typeList", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => [graphql_1.Int], { nullable: true }),
+    __metadata("design:type", Array)
+], PISearch.prototype, "roomsList", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => [graphql_1.Int], { nullable: true }),
+    __metadata("design:type", Array)
+], PISearch.prototype, "bedsList", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsIn)(config_1.availableOptions, { each: true }),
+    (0, graphql_1.Field)(() => [String], { nullable: true }),
+    __metadata("design:type", Array)
+], PISearch.prototype, "options", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => PricesRange, { nullable: true }),
+    __metadata("design:type", PricesRange)
+], PISearch.prototype, "pricesRange", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => PeriodsRange, { nullable: true }),
+    __metadata("design:type", PeriodsRange)
+], PISearch.prototype, "periodsRange", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => SquaresRange, { nullable: true }),
+    __metadata("design:type", SquaresRange)
+], PISearch.prototype, "squaresRange", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], PISearch.prototype, "text", void 0);
+exports.PISearch = PISearch = __decorate([
+    (0, graphql_1.InputType)()
+], PISearch);
+let PropertiesInquiry = class PropertiesInquiry {
+};
+exports.PropertiesInquiry = PropertiesInquiry;
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.Min)(1),
+    (0, graphql_1.Field)(() => graphql_1.Int),
+    __metadata("design:type", Number)
+], PropertiesInquiry.prototype, "page", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.Min)(1),
+    (0, graphql_1.Field)(() => graphql_1.Int),
+    __metadata("design:type", Number)
+], PropertiesInquiry.prototype, "limit", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsIn)(config_1.availablePropertySorts),
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], PropertiesInquiry.prototype, "sort", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, graphql_1.Field)(() => common_enum_1.Direction, { nullable: true }),
+    __metadata("design:type", typeof (_g = typeof common_enum_1.Direction !== "undefined" && common_enum_1.Direction) === "function" ? _g : Object)
+], PropertiesInquiry.prototype, "direction", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, graphql_1.Field)(() => PISearch),
+    __metadata("design:type", PISearch)
+], PropertiesInquiry.prototype, "search", void 0);
+exports.PropertiesInquiry = PropertiesInquiry = __decorate([
+    (0, graphql_1.InputType)()
+], PropertiesInquiry);
 
 
 /***/ }),
