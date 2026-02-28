@@ -1131,7 +1131,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q;
+var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.PropertyResolver = void 0;
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
@@ -1173,6 +1173,20 @@ let PropertyResolver = class PropertyResolver {
     async getAgentProperties(input, memberId) {
         console.log('Mutation: getAgentProperties');
         return await this.propertyService.getAgentProperties(memberId, input);
+    }
+    async getAllPropertiesByAdmin(input, memberId) {
+        console.log('Mutation: getAllPropertiesByAdmin');
+        return await this.propertyService.getAllPropertiesByAdmin(input);
+    }
+    async updatePropertyByAdmin(input) {
+        console.log('Mutation: updatePropertyByAdmin');
+        input._id = (0, config_1.shapeIntoMongoObjectId)(input._id);
+        return await this.propertyService.updatePropertyByAdmin(input);
+    }
+    async removePropertyByAdmin(input) {
+        console.log('Mutation: renovePropertyByAdmin');
+        const propertyId = (0, config_1.shapeIntoMongoObjectId)(input);
+        return await this.propertyService.removePropertyByAdmin(propertyId);
     }
 };
 exports.PropertyResolver = PropertyResolver;
@@ -1224,6 +1238,34 @@ __decorate([
     __metadata("design:paramtypes", [typeof (_o = typeof property_input_1.AgentPropertiesInquiry !== "undefined" && property_input_1.AgentPropertiesInquiry) === "function" ? _o : Object, typeof (_p = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _p : Object]),
     __metadata("design:returntype", typeof (_q = typeof Promise !== "undefined" && Promise) === "function" ? _q : Object)
 ], PropertyResolver.prototype, "getAgentProperties", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(member_enum_1.MemberType.ADMIN),
+    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
+    (0, graphql_1.Query)((returns) => property_1.Properties),
+    __param(0, (0, graphql_1.Args)('input')),
+    __param(1, (0, authMember_decorator_1.AuthMember)('_id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_r = typeof property_input_1.AllPropertiesInquiry !== "undefined" && property_input_1.AllPropertiesInquiry) === "function" ? _r : Object, typeof (_s = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _s : Object]),
+    __metadata("design:returntype", typeof (_t = typeof Promise !== "undefined" && Promise) === "function" ? _t : Object)
+], PropertyResolver.prototype, "getAllPropertiesByAdmin", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(member_enum_1.MemberType.ADMIN),
+    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
+    (0, graphql_1.Mutation)((returns) => property_1.Property),
+    __param(0, (0, graphql_1.Args)('input')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_u = typeof property_update_1.PropertyUpdate !== "undefined" && property_update_1.PropertyUpdate) === "function" ? _u : Object]),
+    __metadata("design:returntype", typeof (_v = typeof Promise !== "undefined" && Promise) === "function" ? _v : Object)
+], PropertyResolver.prototype, "updatePropertyByAdmin", null);
+__decorate([
+    (0, roles_decorator_1.Roles)(member_enum_1.MemberType.ADMIN),
+    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
+    (0, graphql_1.Mutation)((returns) => property_1.Property),
+    __param(0, (0, graphql_1.Args)('propertyId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", typeof (_w = typeof Promise !== "undefined" && Promise) === "function" ? _w : Object)
+], PropertyResolver.prototype, "removePropertyByAdmin", null);
 exports.PropertyResolver = PropertyResolver = __decorate([
     (0, graphql_1.Resolver)(),
     __metadata("design:paramtypes", [typeof (_a = typeof property_service_1.PropertyService !== "undefined" && property_service_1.PropertyService) === "function" ? _a : Object])
@@ -1398,6 +1440,68 @@ let PropertyService = class PropertyService {
         if (!result.length)
             throw new common_1.InternalServerErrorException(common_enum_1.Message.NO_DATA_FOUND);
         return result[0];
+    }
+    async getAllPropertiesByAdmin(input) {
+        const { propertyStatus, propertyLocationList } = input.search;
+        const match = {};
+        const sort = { [input?.sort ?? 'createdAt']: input?.direction ?? common_enum_1.Direction.DESC };
+        if (propertyStatus)
+            match.propertyStatus = propertyStatus;
+        if (propertyLocationList)
+            match.propertyLocation = { $in: propertyLocationList };
+        const result = await this.propertyModel
+            .aggregate([
+            { $match: match },
+            { $sort: sort },
+            {
+                $facet: {
+                    list: [
+                        { $skip: (input.page - 1) * input.limit },
+                        { $limit: input.limit },
+                        config_1.lookupMember,
+                        { $unwind: '$memberData' },
+                    ],
+                    metaCounter: [{ $count: 'total' }],
+                },
+            },
+        ])
+            .exec();
+        if (!result.length)
+            throw new common_1.InternalServerErrorException(common_enum_1.Message.NO_DATA_FOUND);
+        return result[0];
+    }
+    async updatePropertyByAdmin(input) {
+        let { propertyStatus, soldAt, deletedAt } = input;
+        const search = {
+            _id: input._id,
+            propertyStatus: property_enum_1.PropertyStatus.ACTIVE,
+        };
+        if (propertyStatus === property_enum_1.PropertyStatus.SOLD)
+            soldAt = moment().toDate();
+        else if (propertyStatus === property_enum_1.PropertyStatus.DELETE)
+            deletedAt = moment().toDate();
+        const result = await this.propertyModel
+            .findOneAndUpdate(search, input, {
+            new: true,
+        })
+            .exec();
+        if (!result)
+            throw new common_1.InternalServerErrorException(common_enum_1.Message.UPDATE_FAILED);
+        if (soldAt || deletedAt) {
+            await this.memberService.memberStatsEditor({
+                _id: result.memberId,
+                targetKey: 'memberProperties',
+                modifier: -1,
+            });
+        }
+        return result;
+    }
+    async removePropertyByAdmin(propertyId) {
+        const search = { _id: propertyId, propertyStatus: property_enum_1.PropertyStatus.DELETE };
+        const result = await this.propertyModel.findOneAndDelete(search).exec();
+        if (!result)
+            throw new common_1.InternalServerErrorException(common_enum_1.Message.REMOVE_FAILED);
+        return result;
     }
     shapeMatchQuery(match, input) {
         const { memberId, locationList, roomsList, bedsList, typeList, periodsRange, pricesRange, squaresRange, options, text, } = input.search;
