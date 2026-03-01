@@ -90,9 +90,18 @@ export class MemberService {
 		return targetMember;
 	}
 
-	/**  									 ADMIN 									**/
-	/**  									 ADMIN 									**/
-	/**  									 ADMIN 									**/
+	//
+	//
+	//
+	//
+	//
+	//---------------------------------------------------------------------------//
+	//                                   ADMIN                                   //
+	//---------------------------------------------------------------------------//
+	//
+	//
+	//
+	//
 	//----------------------------------GET AGENTS-----------------------------------
 
 	public async getAgents(memberId: ObjectId, input: AgentsInquiry): Promise<Members> {
