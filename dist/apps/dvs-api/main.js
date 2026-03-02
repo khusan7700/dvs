@@ -494,6 +494,7 @@ const BoardArticle_model_1 = __webpack_require__(/*! ../../schemas/BoardArticle.
 const auth_module_1 = __webpack_require__(/*! ../auth/auth.module */ "./apps/dvs-api/src/components/auth/auth.module.ts");
 const member_module_1 = __webpack_require__(/*! ../member/member.module */ "./apps/dvs-api/src/components/member/member.module.ts");
 const view_module_1 = __webpack_require__(/*! ../view/view.module */ "./apps/dvs-api/src/components/view/view.module.ts");
+const like_module_1 = __webpack_require__(/*! ../like/like.module */ "./apps/dvs-api/src/components/like/like.module.ts");
 let BoardArticleModule = class BoardArticleModule {
 };
 exports.BoardArticleModule = BoardArticleModule;
@@ -504,6 +505,7 @@ exports.BoardArticleModule = BoardArticleModule = __decorate([
             auth_module_1.AuthModule,
             member_module_1.MemberModule,
             view_module_1.ViewModule,
+            like_module_1.LikeModule,
         ],
         providers: [board_article_resolver_1.BoardArticleResolver, board_article_service_1.BoardArticleService],
         exports: [board_article_service_1.BoardArticleService],
@@ -532,7 +534,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v;
+var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.BoardArticleResolver = void 0;
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
@@ -570,6 +572,11 @@ let BoardArticleResolver = class BoardArticleResolver {
     async getBoardArticles(input, memberId) {
         console.log('Query: getBoardArticles');
         return await this.boardArticleService.getBoardArticles(memberId, input);
+    }
+    async likeTargetBoardArticle(input, memberId) {
+        console.log('Mutation: likeTargetBoardArticle');
+        const likeRefId = (0, config_1.shapeIntoMongoObjectId)(input);
+        return await this.boardArticleService.likeTargetBoardArticle(memberId, likeRefId);
     }
     async getAllBoardArticlesByAdmin(input, memberId) {
         console.log('Query: getAllBoardArticlesByAdmin');
@@ -623,14 +630,23 @@ __decorate([
     __metadata("design:returntype", typeof (_m = typeof Promise !== "undefined" && Promise) === "function" ? _m : Object)
 ], BoardArticleResolver.prototype, "getBoardArticles", null);
 __decorate([
+    (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
+    (0, graphql_1.Mutation)(() => board_article_1.BoardArticle),
+    __param(0, (0, graphql_1.Args)('articleId')),
+    __param(1, (0, authMember_decorator_1.AuthMember)('_id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, typeof (_o = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _o : Object]),
+    __metadata("design:returntype", typeof (_p = typeof Promise !== "undefined" && Promise) === "function" ? _p : Object)
+], BoardArticleResolver.prototype, "likeTargetBoardArticle", null);
+__decorate([
     (0, roles_decorator_1.Roles)(member_enum_1.MemberType.ADMIN),
     (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
     (0, graphql_1.Query)((returns) => board_article_1.BoardArticles),
     __param(0, (0, graphql_1.Args)('input')),
     __param(1, (0, authMember_decorator_1.AuthMember)('_id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [typeof (_o = typeof board_article_input_1.AllBoardArticlesInquiry !== "undefined" && board_article_input_1.AllBoardArticlesInquiry) === "function" ? _o : Object, typeof (_p = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _p : Object]),
-    __metadata("design:returntype", typeof (_q = typeof Promise !== "undefined" && Promise) === "function" ? _q : Object)
+    __metadata("design:paramtypes", [typeof (_q = typeof board_article_input_1.AllBoardArticlesInquiry !== "undefined" && board_article_input_1.AllBoardArticlesInquiry) === "function" ? _q : Object, typeof (_r = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _r : Object]),
+    __metadata("design:returntype", typeof (_s = typeof Promise !== "undefined" && Promise) === "function" ? _s : Object)
 ], BoardArticleResolver.prototype, "getAllBoardArticlesByAdmin", null);
 __decorate([
     (0, roles_decorator_1.Roles)(member_enum_1.MemberType.ADMIN),
@@ -639,8 +655,8 @@ __decorate([
     __param(0, (0, graphql_1.Args)('input')),
     __param(1, (0, authMember_decorator_1.AuthMember)('_id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [typeof (_r = typeof board_article_update_1.BoardArticleUpdate !== "undefined" && board_article_update_1.BoardArticleUpdate) === "function" ? _r : Object, typeof (_s = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _s : Object]),
-    __metadata("design:returntype", typeof (_t = typeof Promise !== "undefined" && Promise) === "function" ? _t : Object)
+    __metadata("design:paramtypes", [typeof (_t = typeof board_article_update_1.BoardArticleUpdate !== "undefined" && board_article_update_1.BoardArticleUpdate) === "function" ? _t : Object, typeof (_u = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _u : Object]),
+    __metadata("design:returntype", typeof (_v = typeof Promise !== "undefined" && Promise) === "function" ? _v : Object)
 ], BoardArticleResolver.prototype, "updateBoardArticlesByAdmin", null);
 __decorate([
     (0, roles_decorator_1.Roles)(member_enum_1.MemberType.ADMIN),
@@ -649,8 +665,8 @@ __decorate([
     __param(0, (0, graphql_1.Args)('articleId')),
     __param(1, (0, authMember_decorator_1.AuthMember)('_id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, typeof (_u = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _u : Object]),
-    __metadata("design:returntype", typeof (_v = typeof Promise !== "undefined" && Promise) === "function" ? _v : Object)
+    __metadata("design:paramtypes", [String, typeof (_w = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _w : Object]),
+    __metadata("design:returntype", typeof (_x = typeof Promise !== "undefined" && Promise) === "function" ? _x : Object)
 ], BoardArticleResolver.prototype, "removeBoardArticlesByAdmin", null);
 exports.BoardArticleResolver = BoardArticleResolver = __decorate([
     (0, graphql_1.Resolver)(),
@@ -686,18 +702,19 @@ const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
 const mongoose_1 = __webpack_require__(/*! @nestjs/mongoose */ "@nestjs/mongoose");
 const mongoose_2 = __webpack_require__(/*! mongoose */ "mongoose");
 const member_service_1 = __webpack_require__(/*! ../member/member.service */ "./apps/dvs-api/src/components/member/member.service.ts");
-const auth_service_1 = __webpack_require__(/*! ../auth/auth.service */ "./apps/dvs-api/src/components/auth/auth.service.ts");
 const view_service_1 = __webpack_require__(/*! ../view/view.service */ "./apps/dvs-api/src/components/view/view.service.ts");
 const common_enum_1 = __webpack_require__(/*! ../../libs/enums/common.enum */ "./apps/dvs-api/src/libs/enums/common.enum.ts");
 const board_article_enum_1 = __webpack_require__(/*! ../../libs/enums/board-article.enum */ "./apps/dvs-api/src/libs/enums/board-article.enum.ts");
 const view_enum_1 = __webpack_require__(/*! ../../libs/enums/view.enum */ "./apps/dvs-api/src/libs/enums/view.enum.ts");
 const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/dvs-api/src/libs/config.ts");
+const like_service_1 = __webpack_require__(/*! ../like/like.service */ "./apps/dvs-api/src/components/like/like.service.ts");
+const like_enum_1 = __webpack_require__(/*! ../../libs/enums/like.enum */ "./apps/dvs-api/src/libs/enums/like.enum.ts");
 let BoardArticleService = class BoardArticleService {
-    constructor(boardArticleModel, memberService, authService, viewService) {
+    constructor(boardArticleModel, memberService, viewService, likeService) {
         this.boardArticleModel = boardArticleModel;
         this.memberService = memberService;
-        this.authService = authService;
         this.viewService = viewService;
+        this.likeService = likeService;
     }
     async createBoardArticle(memberId, input) {
         input.memberId = memberId;
@@ -730,6 +747,8 @@ let BoardArticleService = class BoardArticleService {
                 await this.boardArticleStatsEditor({ _id: articleId, targetKey: 'articleViews', modifier: 1 });
                 targetBoardArticle.articleViews++;
             }
+            const likeInput = { memberId: memberId, likeRefId: articleId, likeGroup: like_enum_1.LikeGroup.ARTICLE };
+            targetBoardArticle.meLiked = await this.likeService.checkLikeExistence(likeInput);
         }
         targetBoardArticle.memberData = await this.memberService.getMember(null, targetBoardArticle.memberId);
         return targetBoardArticle;
@@ -784,6 +803,27 @@ let BoardArticleService = class BoardArticleService {
         if (!result.length)
             throw new common_1.InternalServerErrorException(common_enum_1.Message.NO_DATA_FOUND);
         return result[0];
+    }
+    async likeTargetBoardArticle(memberId, likeRefId) {
+        const target = await this.boardArticleModel
+            .findOne({ _id: likeRefId, articleStatus: board_article_enum_1.BoardArticleStatus.ACTIVE })
+            .exec();
+        if (!target)
+            throw new common_1.InternalServerErrorException(common_enum_1.Message.NO_DATA_FOUND);
+        const input = {
+            memberId: memberId,
+            likeRefId: likeRefId,
+            likeGroup: like_enum_1.LikeGroup.ARTICLE,
+        };
+        const modifier = await this.likeService.toggleLike(input);
+        const result = await this.boardArticleStatsEditor({
+            _id: likeRefId,
+            targetKey: 'articleLikes',
+            modifier: modifier,
+        });
+        if (!result)
+            throw new common_1.InternalServerErrorException(common_enum_1.Message.SOMETHING_WENT_WRONG);
+        return result;
     }
     async getAllBoardArticlesByAdmin(input) {
         const { articleStatus, articleCategory } = input.search;
@@ -852,7 +892,7 @@ exports.BoardArticleService = BoardArticleService;
 exports.BoardArticleService = BoardArticleService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, mongoose_1.InjectModel)('BoardArticle')),
-    __metadata("design:paramtypes", [typeof (_a = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _a : Object, typeof (_b = typeof member_service_1.MemberService !== "undefined" && member_service_1.MemberService) === "function" ? _b : Object, typeof (_c = typeof auth_service_1.AuthService !== "undefined" && auth_service_1.AuthService) === "function" ? _c : Object, typeof (_d = typeof view_service_1.ViewService !== "undefined" && view_service_1.ViewService) === "function" ? _d : Object])
+    __metadata("design:paramtypes", [typeof (_a = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _a : Object, typeof (_b = typeof member_service_1.MemberService !== "undefined" && member_service_1.MemberService) === "function" ? _b : Object, typeof (_c = typeof view_service_1.ViewService !== "undefined" && view_service_1.ViewService) === "function" ? _c : Object, typeof (_d = typeof like_service_1.LikeService !== "undefined" && like_service_1.LikeService) === "function" ? _d : Object])
 ], BoardArticleService);
 
 
@@ -971,12 +1011,84 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.LikeModule = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
+const mongoose_1 = __webpack_require__(/*! @nestjs/mongoose */ "@nestjs/mongoose");
+const Like_model_1 = __webpack_require__(/*! ../../schemas/Like.model */ "./apps/dvs-api/src/schemas/Like.model.ts");
+const like_service_1 = __webpack_require__(/*! ./like.service */ "./apps/dvs-api/src/components/like/like.service.ts");
 let LikeModule = class LikeModule {
 };
 exports.LikeModule = LikeModule;
 exports.LikeModule = LikeModule = __decorate([
-    (0, common_1.Module)({})
+    (0, common_1.Module)({
+        imports: [mongoose_1.MongooseModule.forFeature([{ name: 'Like', schema: Like_model_1.default }])],
+        providers: [like_service_1.LikeService],
+        exports: [like_service_1.LikeService],
+    })
 ], LikeModule);
+
+
+/***/ }),
+
+/***/ "./apps/dvs-api/src/components/like/like.service.ts":
+/*!**********************************************************!*\
+  !*** ./apps/dvs-api/src/components/like/like.service.ts ***!
+  \**********************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var _a;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.LikeService = void 0;
+const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
+const mongoose_1 = __webpack_require__(/*! @nestjs/mongoose */ "@nestjs/mongoose");
+const mongoose_2 = __webpack_require__(/*! mongoose */ "mongoose");
+const common_enum_1 = __webpack_require__(/*! ../../libs/enums/common.enum */ "./apps/dvs-api/src/libs/enums/common.enum.ts");
+let LikeService = class LikeService {
+    constructor(likeModel) {
+        this.likeModel = likeModel;
+    }
+    async toggleLike(input) {
+        const search = { memberId: input.memberId, likeRefId: input.likeRefId }, exist = await this.likeModel.findOne(search).exec();
+        let modifier = 1;
+        if (exist) {
+            await this.likeModel.findOneAndDelete(search).exec();
+            modifier = -1;
+        }
+        else {
+            try {
+                await this.likeModel.create(input);
+            }
+            catch (err) {
+                console.log('Error, Service.model:', err.message);
+                throw new common_1.BadRequestException(common_enum_1.Message.CREATE_FAILED);
+            }
+        }
+        console.log(`-Like modifier ${modifier}-`);
+        return modifier;
+    }
+    async checkLikeExistence(input) {
+        const { memberId, likeRefId } = input;
+        const result = await this.likeModel.findOne({ memberId: memberId, likeRefId: likeRefId }).exec();
+        return result ? [{ memberId: memberId, likeRefId: likeRefId, myFavorite: true }] : [];
+    }
+};
+exports.LikeService = LikeService;
+exports.LikeService = LikeService = __decorate([
+    (0, common_1.Injectable)(),
+    __param(0, (0, mongoose_1.InjectModel)('Like')),
+    __metadata("design:paramtypes", [typeof (_a = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _a : Object])
+], LikeService);
 
 
 /***/ }),
@@ -1003,12 +1115,20 @@ const mongoose_1 = __webpack_require__(/*! @nestjs/mongoose */ "@nestjs/mongoose
 const Member_model_1 = __webpack_require__(/*! ../../schemas/Member.model */ "./apps/dvs-api/src/schemas/Member.model.ts");
 const auth_module_1 = __webpack_require__(/*! ../auth/auth.module */ "./apps/dvs-api/src/components/auth/auth.module.ts");
 const view_module_1 = __webpack_require__(/*! ../view/view.module */ "./apps/dvs-api/src/components/view/view.module.ts");
+const like_module_1 = __webpack_require__(/*! ../like/like.module */ "./apps/dvs-api/src/components/like/like.module.ts");
 let MemberModule = class MemberModule {
 };
 exports.MemberModule = MemberModule;
 exports.MemberModule = MemberModule = __decorate([
     (0, common_1.Module)({
-        imports: [mongoose_1.MongooseModule.forFeature([{ name: 'Member', schema: Member_model_1.default }]), auth_module_1.AuthModule, view_module_1.ViewModule],
+        imports: [
+            mongoose_1.MongooseModule.forFeature([{ name: 'Member', schema: Member_model_1.default }]),
+            mongoose_1.MongooseModule.forFeature([{ name: 'Member', schema: Member_model_1.default }]),
+            auth_module_1.AuthModule,
+            view_module_1.ViewModule,
+            MemberModule,
+            like_module_1.LikeModule,
+        ],
         providers: [member_resolver_1.MemberResolver, member_service_1.MemberService],
         exports: [member_service_1.MemberService],
     })
@@ -1036,7 +1156,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0;
+var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1, _2;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.MemberResolver = void 0;
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
@@ -1091,6 +1211,11 @@ let MemberResolver = class MemberResolver {
     async getAgents(input, memberId) {
         console.log('Query: getAgents');
         return await this.memberService.getAgents(memberId, input);
+    }
+    async likeTargetMember(input, memberId) {
+        console.log('Mutation: likeTargetMember');
+        const likeRefId = (0, config_1.shapeIntoMongoObjectId)(input);
+        return await this.memberService.likeTargetMember(memberId, likeRefId);
     }
     async getAllMembersByAdmin(input) {
         console.log('Query: getAgents');
@@ -1210,13 +1335,22 @@ __decorate([
     __metadata("design:returntype", typeof (_r = typeof Promise !== "undefined" && Promise) === "function" ? _r : Object)
 ], MemberResolver.prototype, "getAgents", null);
 __decorate([
+    (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
+    (0, graphql_1.Mutation)(() => member_1.Member),
+    __param(0, (0, graphql_1.Args)('memberId')),
+    __param(1, (0, authMember_decorator_1.AuthMember)('_id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, typeof (_s = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _s : Object]),
+    __metadata("design:returntype", typeof (_t = typeof Promise !== "undefined" && Promise) === "function" ? _t : Object)
+], MemberResolver.prototype, "likeTargetMember", null);
+__decorate([
     (0, roles_decorator_1.Roles)(member_enum_1.MemberType.ADMIN),
     (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
     (0, graphql_1.Query)(() => member_1.Members),
     __param(0, (0, graphql_1.Args)('input')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [typeof (_s = typeof member_input_1.MembersInquiry !== "undefined" && member_input_1.MembersInquiry) === "function" ? _s : Object]),
-    __metadata("design:returntype", typeof (_t = typeof Promise !== "undefined" && Promise) === "function" ? _t : Object)
+    __metadata("design:paramtypes", [typeof (_u = typeof member_input_1.MembersInquiry !== "undefined" && member_input_1.MembersInquiry) === "function" ? _u : Object]),
+    __metadata("design:returntype", typeof (_v = typeof Promise !== "undefined" && Promise) === "function" ? _v : Object)
 ], MemberResolver.prototype, "getAllMembersByAdmin", null);
 __decorate([
     (0, roles_decorator_1.Roles)(member_enum_1.MemberType.ADMIN),
@@ -1224,8 +1358,8 @@ __decorate([
     (0, graphql_1.Mutation)(() => member_1.Member),
     __param(0, (0, graphql_1.Args)('input')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [typeof (_u = typeof member_update_1.MemberUpdate !== "undefined" && member_update_1.MemberUpdate) === "function" ? _u : Object]),
-    __metadata("design:returntype", typeof (_v = typeof Promise !== "undefined" && Promise) === "function" ? _v : Object)
+    __metadata("design:paramtypes", [typeof (_w = typeof member_update_1.MemberUpdate !== "undefined" && member_update_1.MemberUpdate) === "function" ? _w : Object]),
+    __metadata("design:returntype", typeof (_x = typeof Promise !== "undefined" && Promise) === "function" ? _x : Object)
 ], MemberResolver.prototype, "updateMemberByAdmin", null);
 __decorate([
     (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
@@ -1233,8 +1367,8 @@ __decorate([
     __param(0, (0, graphql_1.Args)({ name: 'file', type: () => graphql_upload_1.GraphQLUpload })),
     __param(1, (0, graphql_1.Args)('target')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [typeof (_w = typeof graphql_upload_1.FileUpload !== "undefined" && graphql_upload_1.FileUpload) === "function" ? _w : Object, typeof (_x = typeof String !== "undefined" && String) === "function" ? _x : Object]),
-    __metadata("design:returntype", typeof (_y = typeof Promise !== "undefined" && Promise) === "function" ? _y : Object)
+    __metadata("design:paramtypes", [typeof (_y = typeof graphql_upload_1.FileUpload !== "undefined" && graphql_upload_1.FileUpload) === "function" ? _y : Object, typeof (_z = typeof String !== "undefined" && String) === "function" ? _z : Object]),
+    __metadata("design:returntype", typeof (_0 = typeof Promise !== "undefined" && Promise) === "function" ? _0 : Object)
 ], MemberResolver.prototype, "imageUploader", null);
 __decorate([
     (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
@@ -1242,8 +1376,8 @@ __decorate([
     __param(0, (0, graphql_1.Args)('files', { type: () => [graphql_upload_1.GraphQLUpload] })),
     __param(1, (0, graphql_1.Args)('target')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Array, typeof (_z = typeof String !== "undefined" && String) === "function" ? _z : Object]),
-    __metadata("design:returntype", typeof (_0 = typeof Promise !== "undefined" && Promise) === "function" ? _0 : Object)
+    __metadata("design:paramtypes", [Array, typeof (_1 = typeof String !== "undefined" && String) === "function" ? _1 : Object]),
+    __metadata("design:returntype", typeof (_2 = typeof Promise !== "undefined" && Promise) === "function" ? _2 : Object)
 ], MemberResolver.prototype, "imagesUploader", null);
 exports.MemberResolver = MemberResolver = __decorate([
     (0, graphql_1.Resolver)(),
@@ -1272,7 +1406,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var _a, _b, _c;
+var _a, _b, _c, _d;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.MemberService = void 0;
 const common_1 = __webpack_require__(/*! @nestjs/common */ "@nestjs/common");
@@ -1283,11 +1417,14 @@ const common_enum_1 = __webpack_require__(/*! ../../libs/enums/common.enum */ ".
 const auth_service_1 = __webpack_require__(/*! ../auth/auth.service */ "./apps/dvs-api/src/components/auth/auth.service.ts");
 const view_service_1 = __webpack_require__(/*! ../view/view.service */ "./apps/dvs-api/src/components/view/view.service.ts");
 const view_enum_1 = __webpack_require__(/*! ../../libs/enums/view.enum */ "./apps/dvs-api/src/libs/enums/view.enum.ts");
+const like_enum_1 = __webpack_require__(/*! ../../libs/enums/like.enum */ "./apps/dvs-api/src/libs/enums/like.enum.ts");
+const like_service_1 = __webpack_require__(/*! ../like/like.service */ "./apps/dvs-api/src/components/like/like.service.ts");
 let MemberService = class MemberService {
-    constructor(memberModel, authService, viewService) {
+    constructor(memberModel, authService, viewService, likeService) {
         this.memberModel = memberModel;
         this.authService = authService;
         this.viewService = viewService;
+        this.likeService = likeService;
     }
     async signup(input) {
         input.memberPassword = await this.authService.hashPassword(input.memberPassword);
@@ -1348,8 +1485,26 @@ let MemberService = class MemberService {
                 await this.memberModel.findOneAndUpdate(search, { $inc: { memberViews: 1 } }, { new: true }).exec();
                 targetMember.memberViews++;
             }
+            const likeInput = { memberId: memberId, likeRefId: targetId, likeGroup: like_enum_1.LikeGroup.MEMBER };
+            targetMember.meLiked = await this.likeService.checkLikeExistence(likeInput);
         }
         return targetMember;
+    }
+    async likeTargetMember(memberId, likeRefId) {
+        const member = await this.memberModel.findById(memberId).exec();
+        const target = await this.memberModel.findOne({ _id: likeRefId, memberStatus: member_enum_1.MemberStatus.ACTIVE }).exec();
+        if (!target)
+            throw new common_1.InternalServerErrorException(common_enum_1.Message.NO_DATA_FOUND);
+        const input = {
+            memberId: memberId,
+            likeRefId: likeRefId,
+            likeGroup: like_enum_1.LikeGroup.MEMBER,
+        };
+        const modifier = await this.likeService.toggleLike(input);
+        const result = await this.memberStatsEditor({ _id: likeRefId, targetKey: 'memberLikes', modifier: modifier });
+        if (!result)
+            throw new common_1.InternalServerErrorException(common_enum_1.Message.SOMETHING_WENT_WRONG);
+        return result;
     }
     async getAgents(memberId, input) {
         const { text } = input.search;
@@ -1425,7 +1580,7 @@ exports.MemberService = MemberService;
 exports.MemberService = MemberService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, mongoose_1.InjectModel)('Member')),
-    __metadata("design:paramtypes", [typeof (_a = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _a : Object, typeof (_b = typeof auth_service_1.AuthService !== "undefined" && auth_service_1.AuthService) === "function" ? _b : Object, typeof (_c = typeof view_service_1.ViewService !== "undefined" && view_service_1.ViewService) === "function" ? _c : Object])
+    __metadata("design:paramtypes", [typeof (_a = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _a : Object, typeof (_b = typeof auth_service_1.AuthService !== "undefined" && auth_service_1.AuthService) === "function" ? _b : Object, typeof (_c = typeof view_service_1.ViewService !== "undefined" && view_service_1.ViewService) === "function" ? _c : Object, typeof (_d = typeof like_service_1.LikeService !== "undefined" && like_service_1.LikeService) === "function" ? _d : Object])
 ], MemberService);
 
 
@@ -1454,6 +1609,7 @@ const mongoose_1 = __webpack_require__(/*! @nestjs/mongoose */ "@nestjs/mongoose
 const auth_module_1 = __webpack_require__(/*! ../auth/auth.module */ "./apps/dvs-api/src/components/auth/auth.module.ts");
 const view_module_1 = __webpack_require__(/*! ../view/view.module */ "./apps/dvs-api/src/components/view/view.module.ts");
 const member_module_1 = __webpack_require__(/*! ../member/member.module */ "./apps/dvs-api/src/components/member/member.module.ts");
+const like_module_1 = __webpack_require__(/*! ../like/like.module */ "./apps/dvs-api/src/components/like/like.module.ts");
 let PropertyModule = class PropertyModule {
 };
 exports.PropertyModule = PropertyModule;
@@ -1461,9 +1617,10 @@ exports.PropertyModule = PropertyModule = __decorate([
     (0, common_1.Module)({
         imports: [
             mongoose_1.MongooseModule.forFeature([{ name: 'Property', schema: Property_model_1.default }]),
-            member_module_1.MemberModule,
             auth_module_1.AuthModule,
             view_module_1.ViewModule,
+            member_module_1.MemberModule,
+            like_module_1.LikeModule,
         ],
         providers: [property_resolver_1.PropertyResolver, property_service_1.PropertyService],
         exports: [property_service_1.PropertyService],
@@ -1492,7 +1649,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w;
+var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.PropertyResolver = void 0;
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
@@ -1507,6 +1664,7 @@ const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
 const property_input_1 = __webpack_require__(/*! ../../libs/dto/property/property.input */ "./apps/dvs-api/src/libs/dto/property/property.input.ts");
 const without_guard_1 = __webpack_require__(/*! ../auth/guards/without.guard */ "./apps/dvs-api/src/components/auth/guards/without.guard.ts");
 const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/dvs-api/src/libs/config.ts");
+const auth_guard_1 = __webpack_require__(/*! ../auth/guards/auth.guard */ "./apps/dvs-api/src/components/auth/guards/auth.guard.ts");
 const property_update_1 = __webpack_require__(/*! ../../libs/dto/property/property.update */ "./apps/dvs-api/src/libs/dto/property/property.update.ts");
 let PropertyResolver = class PropertyResolver {
     constructor(propertyService) {
@@ -1534,6 +1692,11 @@ let PropertyResolver = class PropertyResolver {
     async getAgentProperties(input, memberId) {
         console.log('Mutation: getAgentProperties');
         return await this.propertyService.getAgentProperties(memberId, input);
+    }
+    async likeTargetProperty(input, memberId) {
+        console.log('Mutation: likeTargetMember');
+        const likeRefId = (0, config_1.shapeIntoMongoObjectId)(input);
+        return await this.propertyService.likeTargetProperty(memberId, likeRefId);
     }
     async getAllPropertiesByAdmin(input, memberId) {
         console.log('Mutation: getAllPropertiesByAdmin');
@@ -1600,14 +1763,23 @@ __decorate([
     __metadata("design:returntype", typeof (_q = typeof Promise !== "undefined" && Promise) === "function" ? _q : Object)
 ], PropertyResolver.prototype, "getAgentProperties", null);
 __decorate([
+    (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
+    (0, graphql_1.Mutation)(() => property_1.Property),
+    __param(0, (0, graphql_1.Args)('propertyId')),
+    __param(1, (0, authMember_decorator_1.AuthMember)('_id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, typeof (_r = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _r : Object]),
+    __metadata("design:returntype", typeof (_s = typeof Promise !== "undefined" && Promise) === "function" ? _s : Object)
+], PropertyResolver.prototype, "likeTargetProperty", null);
+__decorate([
     (0, roles_decorator_1.Roles)(member_enum_1.MemberType.ADMIN),
     (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
     (0, graphql_1.Query)((returns) => property_1.Properties),
     __param(0, (0, graphql_1.Args)('input')),
     __param(1, (0, authMember_decorator_1.AuthMember)('_id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [typeof (_r = typeof property_input_1.AllPropertiesInquiry !== "undefined" && property_input_1.AllPropertiesInquiry) === "function" ? _r : Object, typeof (_s = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _s : Object]),
-    __metadata("design:returntype", typeof (_t = typeof Promise !== "undefined" && Promise) === "function" ? _t : Object)
+    __metadata("design:paramtypes", [typeof (_t = typeof property_input_1.AllPropertiesInquiry !== "undefined" && property_input_1.AllPropertiesInquiry) === "function" ? _t : Object, typeof (_u = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _u : Object]),
+    __metadata("design:returntype", typeof (_v = typeof Promise !== "undefined" && Promise) === "function" ? _v : Object)
 ], PropertyResolver.prototype, "getAllPropertiesByAdmin", null);
 __decorate([
     (0, roles_decorator_1.Roles)(member_enum_1.MemberType.ADMIN),
@@ -1615,8 +1787,8 @@ __decorate([
     (0, graphql_1.Mutation)((returns) => property_1.Property),
     __param(0, (0, graphql_1.Args)('input')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [typeof (_u = typeof property_update_1.PropertyUpdate !== "undefined" && property_update_1.PropertyUpdate) === "function" ? _u : Object]),
-    __metadata("design:returntype", typeof (_v = typeof Promise !== "undefined" && Promise) === "function" ? _v : Object)
+    __metadata("design:paramtypes", [typeof (_w = typeof property_update_1.PropertyUpdate !== "undefined" && property_update_1.PropertyUpdate) === "function" ? _w : Object]),
+    __metadata("design:returntype", typeof (_x = typeof Promise !== "undefined" && Promise) === "function" ? _x : Object)
 ], PropertyResolver.prototype, "updatePropertyByAdmin", null);
 __decorate([
     (0, roles_decorator_1.Roles)(member_enum_1.MemberType.ADMIN),
@@ -1625,7 +1797,7 @@ __decorate([
     __param(0, (0, graphql_1.Args)('propertyId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", typeof (_w = typeof Promise !== "undefined" && Promise) === "function" ? _w : Object)
+    __metadata("design:returntype", typeof (_y = typeof Promise !== "undefined" && Promise) === "function" ? _y : Object)
 ], PropertyResolver.prototype, "removePropertyByAdmin", null);
 exports.PropertyResolver = PropertyResolver = __decorate([
     (0, graphql_1.Resolver)(),
@@ -1666,14 +1838,15 @@ const property_enum_1 = __webpack_require__(/*! ../../libs/enums/property.enum *
 const view_service_1 = __webpack_require__(/*! ../view/view.service */ "./apps/dvs-api/src/components/view/view.service.ts");
 const view_enum_1 = __webpack_require__(/*! ../../libs/enums/view.enum */ "./apps/dvs-api/src/libs/enums/view.enum.ts");
 const moment = __webpack_require__(/*! moment */ "moment");
-const auth_service_1 = __webpack_require__(/*! ../auth/auth.service */ "./apps/dvs-api/src/components/auth/auth.service.ts");
 const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/dvs-api/src/libs/config.ts");
+const like_enum_1 = __webpack_require__(/*! ../../libs/enums/like.enum */ "./apps/dvs-api/src/libs/enums/like.enum.ts");
+const like_service_1 = __webpack_require__(/*! ../like/like.service */ "./apps/dvs-api/src/components/like/like.service.ts");
 let PropertyService = class PropertyService {
-    constructor(propertyModel, memberService, authService, viewService) {
+    constructor(propertyModel, memberService, viewService, likeService) {
         this.propertyModel = propertyModel;
         this.memberService = memberService;
-        this.authService = authService;
         this.viewService = viewService;
+        this.likeService = likeService;
     }
     async createProperty(input) {
         try {
@@ -1709,6 +1882,8 @@ let PropertyService = class PropertyService {
                 await this.propertyStatsEditor({ _id: propertyId, targetKey: 'propertyViews', modifier: 1 });
                 targetProperty.propertyViews++;
             }
+            const likeInput = { memberId: memberId, likeRefId: propertyId, likeGroup: like_enum_1.LikeGroup.PROPERTY };
+            targetProperty.meLiked = await this.likeService.checkLikeExistence(likeInput);
         }
         targetProperty.memberData = await this.memberService.getMember(null, targetProperty.memberId);
         return targetProperty;
@@ -1771,6 +1946,23 @@ let PropertyService = class PropertyService {
         if (!result.length)
             throw new common_1.InternalServerErrorException(common_enum_1.Message.NO_DATA_FOUND);
         return result[0];
+    }
+    async likeTargetProperty(memberId, likeRefId) {
+        const target = await this.propertyModel
+            .findOne({ _id: likeRefId, propertyStatus: property_enum_1.PropertyStatus.ACTIVE })
+            .exec();
+        if (!target)
+            throw new common_1.InternalServerErrorException(common_enum_1.Message.NO_DATA_FOUND);
+        const input = {
+            memberId: memberId,
+            likeRefId: likeRefId,
+            likeGroup: like_enum_1.LikeGroup.PROPERTY,
+        };
+        const modifier = await this.likeService.toggleLike(input);
+        const result = await this.propertyStatsEditor({ _id: likeRefId, targetKey: 'propertyLikes', modifier: modifier });
+        if (!result)
+            throw new common_1.InternalServerErrorException(common_enum_1.Message.SOMETHING_WENT_WRONG);
+        return result;
     }
     async getAgentProperties(memberId, input) {
         const { propertyStatus } = input.search;
@@ -1895,7 +2087,7 @@ exports.PropertyService = PropertyService;
 exports.PropertyService = PropertyService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, mongoose_1.InjectModel)('Property')),
-    __metadata("design:paramtypes", [typeof (_a = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _a : Object, typeof (_b = typeof member_service_1.MemberService !== "undefined" && member_service_1.MemberService) === "function" ? _b : Object, typeof (_c = typeof auth_service_1.AuthService !== "undefined" && auth_service_1.AuthService) === "function" ? _c : Object, typeof (_d = typeof view_service_1.ViewService !== "undefined" && view_service_1.ViewService) === "function" ? _d : Object])
+    __metadata("design:paramtypes", [typeof (_a = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _a : Object, typeof (_b = typeof member_service_1.MemberService !== "undefined" && member_service_1.MemberService) === "function" ? _b : Object, typeof (_c = typeof view_service_1.ViewService !== "undefined" && view_service_1.ViewService) === "function" ? _c : Object, typeof (_d = typeof like_service_1.LikeService !== "undefined" && like_service_1.LikeService) === "function" ? _d : Object])
 ], PropertyService);
 
 
@@ -2294,6 +2486,7 @@ const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
 const board_article_enum_1 = __webpack_require__(/*! ../../enums/board-article.enum */ "./apps/dvs-api/src/libs/enums/board-article.enum.ts");
 const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
 const member_1 = __webpack_require__(/*! ../member/member */ "./apps/dvs-api/src/libs/dto/member/member.ts");
+const like_1 = __webpack_require__(/*! ./apps/dvs-api/src/libs/dto/like/like */ "./apps/dvs-api/src/libs/dto/like/like.ts");
 let BoardArticle = class BoardArticle {
 };
 exports.BoardArticle = BoardArticle;
@@ -2345,6 +2538,10 @@ __decorate([
     (0, graphql_1.Field)(() => Date),
     __metadata("design:type", typeof (_f = typeof Date !== "undefined" && Date) === "function" ? _f : Object)
 ], BoardArticle.prototype, "updatedAt", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => [like_1.MeLiked], { nullable: true }),
+    __metadata("design:type", Array)
+], BoardArticle.prototype, "meLiked", void 0);
 __decorate([
     (0, graphql_1.Field)(() => member_1.Member, { nullable: true }),
     __metadata("design:type", typeof (_g = typeof member_1.Member !== "undefined" && member_1.Member) === "function" ? _g : Object)
@@ -2426,6 +2623,80 @@ __decorate([
 exports.BoardArticleUpdate = BoardArticleUpdate = __decorate([
     (0, graphql_1.InputType)()
 ], BoardArticleUpdate);
+
+
+/***/ }),
+
+/***/ "./apps/dvs-api/src/libs/dto/like/like.ts":
+/*!************************************************!*\
+  !*** ./apps/dvs-api/src/libs/dto/like/like.ts ***!
+  \************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a, _b, _c, _d, _e, _f, _g, _h;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Like = exports.MeLiked = void 0;
+const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
+const like_enum_1 = __webpack_require__(/*! ../../enums/like.enum */ "./apps/dvs-api/src/libs/enums/like.enum.ts");
+const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
+let MeLiked = class MeLiked {
+};
+exports.MeLiked = MeLiked;
+__decorate([
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", typeof (_a = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _a : Object)
+], MeLiked.prototype, "memberId", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", typeof (_b = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _b : Object)
+], MeLiked.prototype, "likeRefId", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => Boolean),
+    __metadata("design:type", Boolean)
+], MeLiked.prototype, "myFavorite", void 0);
+exports.MeLiked = MeLiked = __decorate([
+    (0, graphql_1.ObjectType)()
+], MeLiked);
+let Like = class Like {
+};
+exports.Like = Like;
+__decorate([
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", typeof (_c = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _c : Object)
+], Like.prototype, "_id", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => like_enum_1.LikeGroup),
+    __metadata("design:type", typeof (_d = typeof like_enum_1.LikeGroup !== "undefined" && like_enum_1.LikeGroup) === "function" ? _d : Object)
+], Like.prototype, "likeGroup", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", typeof (_e = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _e : Object)
+], Like.prototype, "likeRefId", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => String),
+    __metadata("design:type", typeof (_f = typeof mongoose_1.ObjectId !== "undefined" && mongoose_1.ObjectId) === "function" ? _f : Object)
+], Like.prototype, "memberId", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => Date),
+    __metadata("design:type", typeof (_g = typeof Date !== "undefined" && Date) === "function" ? _g : Object)
+], Like.prototype, "createdAt", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => Date),
+    __metadata("design:type", typeof (_h = typeof Date !== "undefined" && Date) === "function" ? _h : Object)
+], Like.prototype, "updatedAt", void 0);
+exports.Like = Like = __decorate([
+    (0, graphql_1.ObjectType)()
+], Like);
 
 
 /***/ }),
@@ -2629,6 +2900,7 @@ exports.Members = exports.TotalCounter = exports.Member = void 0;
 const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
 const member_enum_1 = __webpack_require__(/*! ../../enums/member.enum */ "./apps/dvs-api/src/libs/enums/member.enum.ts");
 const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
+const like_1 = __webpack_require__(/*! ../like/like */ "./apps/dvs-api/src/libs/dto/like/like.ts");
 let Member = class Member {
 };
 exports.Member = Member;
@@ -2732,6 +3004,10 @@ __decorate([
     (0, graphql_1.Field)(() => String, { nullable: true }),
     __metadata("design:type", String)
 ], Member.prototype, "accessToken", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => [like_1.MeLiked], { nullable: true }),
+    __metadata("design:type", Array)
+], Member.prototype, "meLiked", void 0);
 exports.Member = Member = __decorate([
     (0, graphql_1.ObjectType)()
 ], Member);
@@ -3223,6 +3499,7 @@ const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
 const property_enum_1 = __webpack_require__(/*! ../../enums/property.enum */ "./apps/dvs-api/src/libs/enums/property.enum.ts");
 const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
 const member_1 = __webpack_require__(/*! ../member/member */ "./apps/dvs-api/src/libs/dto/member/member.ts");
+const like_1 = __webpack_require__(/*! ../like/like */ "./apps/dvs-api/src/libs/dto/like/like.ts");
 let Property = class Property {
 };
 exports.Property = Property;
@@ -3322,6 +3599,10 @@ __decorate([
     (0, graphql_1.Field)(() => Date),
     __metadata("design:type", typeof (_k = typeof Date !== "undefined" && Date) === "function" ? _k : Object)
 ], Property.prototype, "updatedAt", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => [like_1.MeLiked], { nullable: true }),
+    __metadata("design:type", Array)
+], Property.prototype, "meLiked", void 0);
 __decorate([
     (0, graphql_1.Field)(() => member_1.Member, { nullable: true }),
     __metadata("design:type", typeof (_l = typeof member_1.Member !== "undefined" && member_1.Member) === "function" ? _l : Object)
@@ -3532,6 +3813,30 @@ var Direction;
 })(Direction || (exports.Direction = Direction = {}));
 (0, graphql_1.registerEnumType)(Direction, {
     name: 'Direction',
+});
+
+
+/***/ }),
+
+/***/ "./apps/dvs-api/src/libs/enums/like.enum.ts":
+/*!**************************************************!*\
+  !*** ./apps/dvs-api/src/libs/enums/like.enum.ts ***!
+  \**************************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.LikeGroup = void 0;
+const graphql_1 = __webpack_require__(/*! @nestjs/graphql */ "@nestjs/graphql");
+var LikeGroup;
+(function (LikeGroup) {
+    LikeGroup["MEMBER"] = "MEMBER";
+    LikeGroup["PROPERTY"] = "PROPERTY";
+    LikeGroup["ARTICLE"] = "ARTICLE";
+    LikeGroup["BoardArticle"] = "BoardArticle";
+})(LikeGroup || (exports.LikeGroup = LikeGroup = {}));
+(0, graphql_1.registerEnumType)(LikeGroup, {
+    name: 'LikeGroup',
 });
 
 
@@ -3749,6 +4054,38 @@ const BoardArticleSchema = new mongoose_1.Schema({
     },
 }, { timestamps: true, collection: 'boardArticles' });
 exports["default"] = BoardArticleSchema;
+
+
+/***/ }),
+
+/***/ "./apps/dvs-api/src/schemas/Like.model.ts":
+/*!************************************************!*\
+  !*** ./apps/dvs-api/src/schemas/Like.model.ts ***!
+  \************************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
+const view_enum_1 = __webpack_require__(/*! ../libs/enums/view.enum */ "./apps/dvs-api/src/libs/enums/view.enum.ts");
+const LikeSchema = new mongoose_1.Schema({
+    likeGroup: {
+        type: String,
+        enum: view_enum_1.ViewGroup,
+        required: true,
+    },
+    likeRefId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        required: true,
+    },
+    memberId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        required: true,
+        ref: 'Member',
+    },
+}, { timestamps: true, collection: 'likes' });
+LikeSchema.index({ memberId: 1, likeRefId: 1 }, { unique: true });
+exports["default"] = LikeSchema;
 
 
 /***/ }),

@@ -10,6 +10,9 @@ import { MemberUpdate } from '../../libs/dto/member/member.update';
 import { StatisticModifier, T } from '../../libs/types/common';
 import { ViewService } from '../view/view.service';
 import { ViewGroup } from '../../libs/enums/view.enum';
+import { LikeInput } from '../../libs/dto/like/like.input';
+import { LikeGroup } from '../../libs/enums/like.enum';
+import { LikeService } from '../like/like.service';
 
 @Injectable()
 export class MemberService {
@@ -17,7 +20,10 @@ export class MemberService {
 		@InjectModel('Member') private readonly memberModel: Model<Member>,
 		private authService: AuthService,
 		private viewService: ViewService,
+		private likeService: LikeService,
 	) {}
+
+	//--------------------------------SIGNUP-------------------------------------
 
 	public async signup(input: MemberInput): Promise<Member> {
 		input.memberPassword = await this.authService.hashPassword(input.memberPassword);
@@ -31,6 +37,7 @@ export class MemberService {
 		}
 	}
 
+	//--------------------------------LOGIN-------------------------------------
 	public async login(input: LoginInput): Promise<Member> {
 		// todo pasword
 		const { memberNick, memberPassword } = input;
@@ -52,6 +59,7 @@ export class MemberService {
 		return response;
 	}
 
+	//--------------------------------UPDATEMEMBER-------------------------------------
 	public async updateMember(memberId: ObjectId, input: MemberUpdate): Promise<Member> {
 		const result: Member = await this.memberModel
 			.findOneAndUpdate(
@@ -69,6 +77,7 @@ export class MemberService {
 		return result;
 	}
 
+	//--------------------------------GETMEMBER-------------------------------------
 	public async getMember(memberId: ObjectId, targetId: ObjectId): Promise<Member> {
 		const search: T = {
 			_id: targetId,
@@ -86,8 +95,35 @@ export class MemberService {
 				await this.memberModel.findOneAndUpdate(search, { $inc: { memberViews: 1 } }, { new: true }).exec();
 				targetMember.memberViews++;
 			}
+
+			//----------------------------------like-----------------------------------
+			const likeInput = { memberId: memberId, likeRefId: targetId, likeGroup: LikeGroup.MEMBER };
+			targetMember.meLiked = await this.likeService.checkLikeExistence(likeInput);
+
+			//----------------------------------FOLLOW-----------------------------------
+			// targetMember.meFollowed = await this.checkSubscription(memberId, targetId);
 		}
 		return targetMember;
+	}
+
+	//--------------------------------like Target Member-------------------------------------
+
+	public async likeTargetMember(memberId: ObjectId, likeRefId: ObjectId): Promise<Member> {
+		const member = await this.memberModel.findById(memberId).exec();
+		const target: Member = await this.memberModel.findOne({ _id: likeRefId, memberStatus: MemberStatus.ACTIVE }).exec();
+		if (!target) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+
+		const input: LikeInput = {
+			memberId: memberId,
+			likeRefId: likeRefId,
+			likeGroup: LikeGroup.MEMBER,
+		};
+
+		const modifier: number = await this.likeService.toggleLike(input);
+		const result = await this.memberStatsEditor({ _id: likeRefId, targetKey: 'memberLikes', modifier: modifier });
+		if (!result) throw new InternalServerErrorException(Message.SOMETHING_WENT_WRONG);
+
+		return result;
 	}
 
 	//
