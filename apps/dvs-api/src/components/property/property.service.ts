@@ -6,6 +6,7 @@ import { Direction, Message } from '../../libs/enums/common.enum';
 import {
 	AgentPropertiesInquiry,
 	AllPropertiesInquiry,
+	OrdinaryInquiry,
 	PropertiesInquiry,
 	PropertyInput,
 } from '../../libs/dto/property/property.input';
@@ -330,5 +331,15 @@ export class PropertyService {
 				return { [ele]: true };
 			});
 		}
+	}
+
+	//---------------------------GET FAVORITES--------------------------
+	public async getFavorites(memberId: ObjectId, input: OrdinaryInquiry): Promise<Properties> {
+		return await this.likeService.getFavoriteProperties(memberId, input);
+	}
+
+	//---------------------------GET VISITED--------------------------
+	public async getVisited(memberId: ObjectId, input: OrdinaryInquiry): Promise<Properties> {
+		return await this.viewService.getVisitedProperties(memberId, input);
 	}
 }
