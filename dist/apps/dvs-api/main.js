@@ -1682,6 +1682,7 @@ const view_service_1 = __webpack_require__(/*! ../view/view.service */ "./apps/d
 const view_enum_1 = __webpack_require__(/*! ../../libs/enums/view.enum */ "./apps/dvs-api/src/libs/enums/view.enum.ts");
 const like_enum_1 = __webpack_require__(/*! ../../libs/enums/like.enum */ "./apps/dvs-api/src/libs/enums/like.enum.ts");
 const like_service_1 = __webpack_require__(/*! ../like/like.service */ "./apps/dvs-api/src/components/like/like.service.ts");
+const config_1 = __webpack_require__(/*! ../../libs/config */ "./apps/dvs-api/src/libs/config.ts");
 let MemberService = class MemberService {
     constructor(memberModel, followModel, authService, viewService, likeService) {
         this.memberModel = memberModel;
@@ -1791,6 +1792,7 @@ let MemberService = class MemberService {
                     list: [
                         { $skip: (input.page - 1) * input.limit },
                         { $limit: input.limit },
+                        (0, config_1.lookupAuthMemberLiked)(memberId),
                     ],
                     metaCounter: [{ $count: 'total' }],
                 },
@@ -2205,6 +2207,7 @@ let PropertyService = class PropertyService {
                     list: [
                         { $skip: (input.page - 1) * input.limit },
                         { $limit: input.limit },
+                        (0, config_1.lookupAuthMemberLiked)(memberId),
                         config_1.lookupMember,
                         { $unwind: '$memberData' },
                     ],
